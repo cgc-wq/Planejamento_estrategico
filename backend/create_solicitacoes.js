@@ -17,9 +17,9 @@ async function createTable() {
   `;
   try {
     await pool.query(sql);
-    console.log('✅ Tabela solicitacoes criada com sucesso!');
+    console.log(' Tabela solicitacoes criada com sucesso!');
   } catch (err) {
-    console.error('❌ Erro:', err.message);
+    console.error(' Erro:', err.message);
   } finally {
     await pool.end();
   }
