@@ -1,0 +1,189 @@
+import { state, ADMIN_EMAIL, PERSPECTIVAS, SWOT_DATA, STATUS_CHIPS, STATUS_LABELS } from './data.js';
+import { escapeHTML } from './utils.js';
+
+export function renderObjetivosEstrategicos() {
+    const c = document.getElementById('objetivos-content');
+    if (!c) return;
+
+    const isAdmin = (state.currentUser && state.currentUser.email === ADMIN_EMAIL);
+    let html = '';
+
+    Object.entries(PERSPECTIVAS).forEach(([key, p]) => {
+        html += `<div class="section-title" style="color:${p.cor};">${p.icon} ${p.nome}</div><div class="grid-2" style="margin-bottom: 24px;">`;
+
+        p.objetivos.forEach(obj => {
+            const data = state.objetivosGlobais[obj.id] || { indicador: '', meta: '', resultado: '' };
+            const indicadorSafe = escapeHTML(data.indicador);
+            const metaVal = parseFloat(data.meta) || 0, resVal = parseFloat(data.resultado) || 0;
+            let pct = metaVal > 0 ? Math.min(100, Math.round((resVal / metaVal) * 100)) : 0;
+            const barColor = pct >= 80 ? '#1BA05B' : pct >= 50 ? '#E8A020' : '#C0392B';
+
+            html += `<div class="card" style="border-left: 4px solid ${p.cor}; padding:18px;">
+        <div style="font-size:13px; font-weight:700; margin-bottom:12px;">${obj.id} — ${obj.nome}</div>`;
+
+            if (isAdmin) {
+                html += `
+          <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px; font-size:11px;">
+            <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Indicador</label><input type="text" id="obj-ind-${obj.id}" value="${indicadorSafe}" placeholder="Nome do indicador geral..." style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; font-family:'Sora',sans-serif;"></div>
+            <div style="display:flex; gap:10px;">
+               <div style="flex:1;"><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Meta</label><input type="number" id="obj-meta-${obj.id}" value="${data.meta || ''}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px;"></div>
+               <div style="flex:1;"><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Resultado</label><input type="number" id="obj-res-${obj.id}" value="${data.resultado || ''}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px;"></div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap: 14px;">
+            <div style="flex:1;"><div class="progress-track" style="height:6px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div></div>
+            <button id="btn-salvar-obj-${obj.id}" class="btn btn-primary btn-sm" onclick="window.salvarObjetivoEstrategico('${obj.id}')">Salvar</button>
+          </div>
+        `;
+            } else {
+                html += `<div style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-bottom:12px; color:var(--texto-sec);"><div><strong>Indicador:</strong> <span style="color:var(--texto);">${indicadorSafe || 'Aguardando definição'}</span></div><div><strong>Meta:</strong> <span style="color:var(--texto);">${data.meta || '0'}</span> | <strong>Atual:</strong> <span style="color:var(--texto);">${data.resultado || '0'}</span></div></div><div style="display:flex; align-items:center; gap:10px;"><div style="flex:1;"><div class="progress-track" style="height:8px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div></div><div style="font-weight:800; font-size:14px; color:${barColor};">${pct}%</div></div>`;
+            }
+            html += `</div>`;
+        });
+        html += `</div>`;
+    });
+    c.innerHTML = html;
+}
+
+export function renderMapa() {
+    const container = document.getElementById('mapa-content');
+    if (!container) return;
+
+    // 1. Estrutura do Cabeçalho CFA (Missão, Visão, Valores) Centralizada
+    let html = `
+    <div class="bsc-mapa">
+      <div class="bsc-header-institucional">
+         <div style="width: 150px; height: 100px; background: var(--azul-cfa); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; margin-bottom: 16px; text-transform:uppercase;">Sistema CFA/CRAs</div>
+         
+         <div class="card p-cfa" style="border-top: 4px solid var(--azul-cfa); padding: 24px; max-width: 600px; margin-bottom: 20px;">
+           <div class="bsc-institucional-label" style="font-size: 14px; font-weight: 800; color:var(--azul-cfa); text-transform:uppercase; margin-bottom:10px;">Missão Sistema CFA/CRAs</div>
+           <p style="font-size: 13px; font-weight: 500; line-height:1.6;">"fiscalizar, valorizar e promover o exercício do profissional de administração, contribuindo com o desenvolvimento do país."</p>
+         </div>
+
+         <div class="bsc-institucional-cards" style="width: 100%; max-width: 1000px;">
+           <div class="card p-cfa" style="border-top: 4px solid var(--azul-mid); flex:1; border-color:#6B3FA0;">
+             <div class="bsc-institucional-label" style="font-size:12px;font-weight:700;color:#6B3FA0;text-transform:uppercase;margin-bottom:6px;">Visão</div>
+             <p style="font-size: 12px;">"ser uma entidade reconhecida pela sociedade, capaz de assegurar a atuação plena dos profissionais de administração."</p>
+           </div>
+           <div class="card p-cfa" style="border-top: 4px solid var(--amarelo); flex:1;">
+             <div class="bsc-institucional-label" style="font-size:12px;font-weight:700;color:#E67E22;text-transform:uppercase;margin-bottom:6px;">Valores</div>
+             <p style="font-size: 12px;">Ética, Inovação, Valorização da profissão, Sustentabilidade e Transparência.</p>
+           </div>
+         </div>
+         
+         <div class="bsc-conector-central"></div>
+      </div>
+
+      <div class="bsc-perpectivas-container">`;
+
+    // Vamos iterar pelas perspectivas na ordem: Base -> Topo (Causa -> Efeito)
+    // Ordem: Sustentabilidade -> Processos -> Clientes -> Financeira
+    const ordemBscValores = ['sustentabilidade', 'processos', 'clientes', 'financeiro'];
+
+    ordemBscValores.forEach((key, idx) => {
+        const p = PERSPECTIVAS[key];
+        const eBase = (idx === ordemBscValores.length - 1); // Última perspectiva (topo) não tem conector vertical
+
+        html += `
+        <div class="bsc-zona-perspectiva ${p.classe}">
+          
+          <div class="bsc-zona-header" style="background:${p.bg}; border-color:${p.cor}; color:${p.cor};">
+            <span>${p.icon}</span> <span>${p.nome}</span>
+          </div>
+
+          <div class="bsc-objetivos-grid">`;
+
+        // Ordena os objetivos pelo ID para ficarem na ordem correta
+        const objetivosOrdenados = p.objetivos.sort((a, b) => a.id.localeCompare(b.id));
+
+        objetivosOrdenados.forEach(obj => {
+            html += `
+              <div class="objetivo-card-bsc" style="border-top: 5px solid ${p.cor}; background:${p.bg};">
+                <div class="objetivo-card-header" style="justify-content:space-between; align-items:flex-start;">
+                   <span class="objetivo-card-title" style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--texto); line-height:1.4;">${obj.id} — ${window.escapeHTML(obj.nome)}</span>
+                   <div style="display:flex; gap:6px; flex-shrink:0; align-items: center;">
+                      ${obj.ods.map(o => {
+                const n = o.replace(/\D/g, '').padStart(2, '0');
+                return `<img src="./assets/ods/sdg_icon_${n}.png" alt="${o}" title="${o}" style="width:34px; height:34px; border-radius:4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
+            }).join('')}
+                   </div>
+                </div>
+              </div>`;
+        });
+
+        html += `
+          </div>
+          ${!eBase ? '<div class="bsc-conector-vertical"></div>' : ''}
+        </div>`;
+    });
+
+    html += `
+      </div>
+    </div>`;
+
+    container.innerHTML = html;
+}
+
+export function renderIndicadores() {
+    const c = document.getElementById('indicadores-content');
+    if (!c) return;
+
+    let html = '<div style="margin-bottom: 20px;"><p style="font-size:13px; color:var(--texto-sec);">Visão consolidada de todas as unidades do Sistema CFA/CRAs.</p></div>';
+    html += Object.entries(PERSPECTIVAS).map(([key, p]) => {
+        const acoesPersp = state.todasAcoes.filter(a => a.perspectiva === key && a.indicador && a.meta);
+        const avgPersp = acoesPersp.length > 0 ? Math.round(acoesPersp.reduce((s, a) => s + (a.execucao || 0), 0) / acoesPersp.length) : 0;
+
+        let perspCard = `<div class="section-title">${p.icon} ${p.nome}</div><div class="card" style="margin-bottom:20px;"><div style="display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--cinza-borda);margin-bottom:14px;"><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--texto-sec);">Execução Média (Geral)</div><div style="font-size:28px;font-family:'Playfair Display',serif;font-weight:900;color:${p.cor};">${avgPersp}%</div></div><div style="flex:1;"><div class="progress-track" style="height:12px;"><div class="progress-fill" style="width:${avgPersp}%;background:${p.cor};height:12px;"></div></div></div></div>`;
+
+        if (acoesPersp.length === 0) return perspCard + `<div style="font-size:12px;color:var(--texto-sec);padding:8px 0;">Nenhum indicador com meta definida nesta perspectiva.</div></div>`;
+
+        p.objetivos.forEach(obj => {
+            const acoesObj = acoesPersp.filter(a => a.objetivo === obj.id);
+            if (acoesObj.length > 0) {
+                const avgObj = Math.round(acoesObj.reduce((s, a) => s + (a.execucao || 0), 0) / acoesObj.length);
+                perspCard += `<div style="margin-top: 16px; background: var(--cinza-bg); border-radius: 8px; padding: 12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;"><div style="font-size:12px; font-weight:700; color:var(--azul-cfa);">${obj.id} - ${escapeHTML(obj.nome)}</div><div style="font-size:11px; font-weight:800; color:${p.cor};">Média Nacional: ${avgObj}%</div></div><div class="progress-track" style="height:6px; margin-bottom: 0;"><div class="progress-fill" style="width:${avgObj}%;background:${p.cor};"></div></div></div>`;
+            }
+        });
+        return perspCard + `</div>`;
+    }).join('');
+    c.innerHTML = html;
+}
+
+export function renderSWOT() {
+    const renderList = (id, items) => { const el = document.getElementById(id); if (el) el.innerHTML = items.map(i => `<li><span></span>${i}</li>`).join(''); };
+    renderList('swot-forcas', SWOT_DATA.forcas);
+    renderList('swot-fraquezas', SWOT_DATA.fraquezas);
+    renderList('swot-oport', SWOT_DATA.oportunidades);
+    renderList('swot-ameacas', SWOT_DATA.ameacas);
+}
+
+export function renderRelatorio() {
+    const total = state.acoes.length;
+    const pct = total > 0 ? Math.round(state.acoes.reduce((s, a) => s + (a.execucao || 0), 0) / total) : 0;
+    const c = document.getElementById('relatorio-content');
+    if (!c) return;
+
+    c.innerHTML = `
+    <div class="card" style="margin-bottom:20px; padding:28px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--texto-sec);letter-spacing:1px;margin-bottom:12px;">Relatório de Execução Local</div>
+      <div class="grid-4" style="margin-bottom:24px;">
+        <div style="text-align:center;"><div style="font-size:40px;font-family:'Playfair Display',serif;font-weight:900;color:var(--azul-cfa);">${total}</div><div style="font-size:12px;color:var(--texto-sec);">Projetos Totais</div></div>
+        <div style="text-align:center;"><div style="font-size:40px;font-family:'Playfair Display',serif;font-weight:900;color:var(--verde);">${state.acoes.filter(a => a.status === 'concluido').length}</div><div style="font-size:12px;color:var(--texto-sec);">Concluídos</div></div>
+        <div style="text-align:center;"><div style="font-size:40px;font-family:'Playfair Display',serif;font-weight:900;color:var(--azul-mid);">${state.acoes.filter(a => a.status === 'em_andamento').length}</div><div style="font-size:12px;color:var(--texto-sec);">Em Andamento</div></div>
+        <div style="text-align:center;"><div style="font-size:40px;font-family:'Playfair Display',serif;font-weight:900;color:var(--amarelo);">${pct}%</div><div style="font-size:12px;color:var(--texto-sec);">Execução Média</div></div>
+      </div>
+      ${Object.entries(PERSPECTIVAS).map(([key, p]) => {
+        const as = state.acoes.filter(a => a.perspectiva === key);
+        const avg = as.length > 0 ? Math.round(as.reduce((s, a) => s + (a.execucao || 0), 0) / as.length) : 0;
+        return `
+        <div style="margin-bottom:20px;">
+          <div style="font-size:14px;font-weight:800;color:${p.cor};margin-bottom:10px;">${p.icon} ${p.nome}</div>
+          <div style="display:flex;gap:16px;margin-bottom:8px;font-size:12px;color:var(--texto-sec);"><span><strong>${as.length}</strong> projetos</span><span><strong style="color:${p.cor};">${avg}%</strong> execução média</span></div>
+          <div class="progress-track" style="height:10px;"><div class="progress-fill" style="width:${avg}%;background:${p.cor};height:10px;"></div></div>
+          ${as.length > 0 ? `<table style="width:100%;font-size:12px;margin-top:10px;border-collapse:collapse;">
+            ${as.map(a => `<tr style="border-bottom:1px solid var(--cinza-borda);"><td style="padding:6px 8px;">${a.objetivo}</td><td style="padding:6px 8px;font-weight:600;">${escapeHTML(a.nome)}</td><td style="padding:6px 8px;"><span class="chip ${STATUS_CHIPS[a.status]}">${STATUS_LABELS[a.status]}</span></td><td style="padding:6px 8px;font-weight:700;color:${p.cor};">${a.execucao || 0}%</td></tr>`).join('')}
+          </table>` : '<div style="font-size:12px;color:var(--texto-sec);padding:8px;">Nenhum registro.</div>'}
+        </div>`;
+    }).join('')}
+    </div>`;
+}
