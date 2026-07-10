@@ -1,4 +1,4 @@
- run star <html lang="pt-BR">
+run star <html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
@@ -35,6 +35,46 @@
                 <a href="#" onclick="window.recuperarSenha()" style="font-size:12px; color:var(--azul-cfa);">
                     Esqueci minha senha
                 </a>
+            </p>
+        </div>
+
+        <div class="login-card" id="form-recover-view" style="display: none;">
+            <div
+                style="width: 60px; height: 60px; background: var(--azul-cfa); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; margin: 0 auto 20px;">
+                CFA</div>
+            <h2>Recuperar Senha</h2>
+            <p>Insira seu e-mail para receber as instruções de redefinição.</p>
+            <div class="form-group">
+                <label>E-mail da Unidade</label>
+                <input type="email" id="recover-email" placeholder="ex: admin@cfa.org.br" required>
+            </div>
+            <button id="btn-recover" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;"
+                onclick="window.enviarEmailRecuperacao()">Enviar Link</button>
+            <p style="text-align: center; margin-top: 15px; font-size: 13px;">
+                <a href="#" onclick="window.voltarParaLogin()"
+                    style="color: var(--azul-cfa); font-weight: bold;">Voltar para o Login</a>
+            </p>
+        </div>
+
+        <div class="login-card" id="form-reset-password-view" style="display: none;">
+            <div
+                style="width: 60px; height: 60px; background: var(--azul-cfa); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; margin: 0 auto 20px;">
+                CFA</div>
+            <h2>Nova Senha</h2>
+            <p>Crie uma nova senha de acesso segura para o painel.</p>
+            <div class="form-group">
+                <label>Nova Senha</label>
+                <input type="password" id="reset-senha" placeholder="Digite a nova senha" required>
+            </div>
+            <div class="form-group">
+                <label>Confirmar Nova Senha</label>
+                <input type="password" id="reset-senha-confirm" placeholder="Confirme a nova senha" required>
+            </div>
+            <button id="btn-reset-password" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;"
+                onclick="window.redefinirNovaSenha()">Salvar Nova Senha</button>
+            <p style="text-align: center; margin-top: 15px; font-size: 13px;">
+                <a href="#" onclick="window.voltarParaLogin()"
+                    style="color: var(--azul-cfa); font-weight: bold;">Cancelar e Voltar</a>
             </p>
         </div>
 
@@ -154,7 +194,7 @@
                 <circle cx="12" cy="12" r="10" />
                 <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
             </svg><span class="nav-label">Objetivos Estratégicos</span></a>
-        <a class="nav-item" data-page="indicadores" onclick="window.showPage('indicadores',this)"><svg width="20"
+        <a class="nav-item" id="nav-indicadores" data-page="indicadores" onclick="window.showPage('indicadores',this)" style="display:none;"><svg width="20"
                 height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <line x1="18" y1="20" x2="18" y2="10" />
                 <line x1="12" y1="20" x2="12" y2="4" />
@@ -166,11 +206,6 @@
                 <line x1="12" y1="2" x2="12" y2="22" />
                 <line x1="2" y1="12" x2="22" y2="12" />
             </svg><span class="nav-label">Análise SWOT</span></a>
-        <a class="nav-item" data-page="institucional" onclick="window.showPage('institucional',this)"><svg width="20"
-                height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-            </svg><span class="nav-label">Institucional</span></a>
         <a class="nav-item" id="nav-admin" data-page="admin" onclick="window.showPage('admin',this)"
             style="display:none;">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -232,6 +267,55 @@
                     <div class="chart-wrap" id="wrap-chart-status"><canvas id="chartStatus"></canvas></div>
                 </div>
             </div>
+            <div id="secao-diag-objetivos" style="margin-bottom:24px;">
+                <div class="card" style="display: flex; flex-direction: column; min-height: 340px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--cinza-borda); padding-bottom: 8px; margin-bottom: 10px;">
+                        <div class="card-title" style="color: var(--azul-cfa); font-weight: 800; margin: 0;">🎯 Alcance dos Objetivos Estratégicos</div>
+                        <div style="display: flex; gap: 6px;">
+                            <button id="btn-view-lista" class="btn btn-sm btn-primary" onclick="window.setObjetivosView('lista')" style="padding: 4px 8px; font-size: 11px; height: auto;">Lista</button>
+                            <button id="btn-view-grafico" class="btn btn-sm btn-secondary" onclick="window.setObjetivosView('grafico')" style="padding: 4px 8px; font-size: 11px; height: auto;">Gráfico</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--cinza-borda);">
+                        <button id="btn-filtro-obj-all" onclick="window.filtrarObjetivosPorPerspectiva('')" style="padding: 4px 12px; font-size: 10px; font-weight: 700; border-radius: 99px; border: 2px solid var(--azul-cfa); background: var(--azul-cfa); color: white; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s;">Todas</button>
+                        <button id="btn-filtro-obj-sustentabilidade" onclick="window.filtrarObjetivosPorPerspectiva('sustentabilidade')" style="padding: 4px 12px; font-size: 10px; font-weight: 700; border-radius: 99px; border: 2px solid #6B3FA0; background: white; color: #6B3FA0; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s;">🌿 Sustentabilidade</button>
+                        <button id="btn-filtro-obj-processos" onclick="window.filtrarObjetivosPorPerspectiva('processos')" style="padding: 4px 12px; font-size: 10px; font-weight: 700; border-radius: 99px; border: 2px solid #1BA05B; background: white; color: #1BA05B; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s;">⚙️ Des. Institucional</button>
+                        <button id="btn-filtro-obj-clientes" onclick="window.filtrarObjetivosPorPerspectiva('clientes')" style="padding: 4px 12px; font-size: 10px; font-weight: 700; border-radius: 99px; border: 2px solid #E67E22; background: white; color: #E67E22; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s;">👥 Clientes</button>
+                        <button id="btn-filtro-obj-financeiro" onclick="window.filtrarObjetivosPorPerspectiva('financeiro')" style="padding: 4px 12px; font-size: 10px; font-weight: 700; border-radius: 99px; border: 2px solid #A04000; background: white; color: #A04000; cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s;">💰 Financeiro</button>
+                    </div>
+                    <div id="dashboard-objetivos-lista" style="flex: 1; overflow-y: auto; max-height: 260px; padding-right: 8px; display: flex; flex-direction: column; gap: 12px;">
+                        <p style="font-size:12px; color:var(--texto-sec);">Carregando objetivos estratégicos...</p>
+                    </div>
+                    <div id="dashboard-objetivos-grafico-wrap" style="flex: 1; display: none; height: 260px; position: relative;">
+                        <canvas id="chartObjetivos"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-bottom:24px;">
+                <div class="card" style="display: flex; flex-direction: column;">
+                    <div class="card-title" style="color: var(--azul-cfa); font-weight: 800; border-bottom: 2px solid var(--cinza-borda); padding-bottom: 8px; margin-bottom: 16px;">💡 Diagnóstico e Análise do Sistema</div>
+                    <div style="display: flex; flex-direction: row; gap: 16px; flex: 1;">
+                        <div style="flex: 1; background: #F8FAFF; border: 1px solid var(--cinza-borda); border-radius: var(--radius-sm); padding: 16px; border-left: 4px solid var(--azul-mid);">
+                            <div style="font-size: 11px; font-weight: 800; color: var(--azul-mid); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">📊 Como está o desempenho geral?</div>
+                            <div id="diagnostico-desempenho-geral" style="font-size: 13px; line-height: 1.6; color: var(--texto);">
+                                Carregando diagnóstico de desempenho...
+                            </div>
+                        </div>
+                        <div style="flex: 1; background: #FFFBF0; border: 1px solid var(--cinza-borda); border-radius: var(--radius-sm); padding: 16px; border-left: 4px solid var(--amarelo);">
+                            <div style="font-size: 11px; font-weight: 800; color: var(--amarelo); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">⚠️ Qual projeto dentro de SA está atrasado?</div>
+                            <div id="diagnostico-sa-atrasado" style="font-size: 13px; line-height: 1.6; color: var(--texto);">
+                                Carregando projetos atrasados em SA...
+                            </div>
+                        </div>
+                        <div style="flex: 1; background: #F4FAF6; border: 1px solid var(--cinza-borda); border-radius: var(--radius-sm); padding: 16px; border-left: 4px solid var(--verde);">
+                            <div style="font-size: 11px; font-weight: 800; color: var(--verde); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">🏆 Quais os 3 melhores projetos em toda a organização?</div>
+                            <div id="diagnostico-top-projetos" style="font-size: 13px; line-height: 1.6; color: var(--texto);">
+                                Carregando melhores projetos...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
 
@@ -277,6 +361,62 @@
                         <option value="concluido">Concluído</option>
                         <option value="pausado">Pausado</option>
                     </select>
+
+                    <div id="admin-filtros-acoes" style="display:none; gap:12px; align-items:center; width: 100%; border-top: 1px solid var(--cinza-borda); padding-top: 12px; margin-top: 8px;">
+                        <label style="font-size:13px; font-weight:700;">Admin: Filtrar Unidade:</label>
+                        <select id="filtro-entidade-acoes" onchange="window.toggleSetorAcoes(); window.renderAcoes()" style="border:1px solid var(--cinza-borda); border-radius:8px; padding:9px 12px; font-size:13px; font-family:'Sora',sans-serif; background:white; color:var(--texto); flex:1; max-width:300px;">
+                            <option value="">Todas as Unidades (Geral)</option>
+                            <option value="CFA">CFA - Conselho Federal de Administração</option>
+                            <option value="CRA-AC">CRA-AC (Acre)</option>
+                            <option value="CRA-AL">CRA-AL (Alagoas)</option>
+                            <option value="CRA-AP">CRA-AP (Amapá)</option>
+                            <option value="CRA-AM">CRA-AM (Amazonas)</option>
+                            <option value="CRA-BA">CRA-BA (Bahia)</option>
+                            <option value="CRA-CE">CRA-CE (Ceará)</option>
+                            <option value="CRA-DF">CRA-DF (Distrito Federal)</option>
+                            <option value="CRA-ES">CRA-ES (Espírito Santo)</option>
+                            <option value="CRA-GO">CRA-GO (Goiás)</option>
+                            <option value="CRA-MA">CRA-MA (Maranhão)</option>
+                            <option value="CRA-MT">CRA-MT (Mato Grosso)</option>
+                            <option value="CRA-MS">CRA-MS (Mato Grosso do Sul)</option>
+                            <option value="CRA-MG">CRA-MG (Minas Gerais)</option>
+                            <option value="CRA-PA">CRA-PA (Pará)</option>
+                            <option value="CRA-PB">CRA-PB (Paraíba)</option>
+                            <option value="CRA-PR">CRA-PR (Paraná)</option>
+                            <option value="CRA-PE">CRA-PE (Pernambuco)</option>
+                            <option value="CRA-PI">CRA-PI (Piauí)</option>
+                            <option value="CRA-RJ">CRA-RJ (Rio de Janeiro)</option>
+                            <option value="CRA-RN">CRA-RN (Rio Grande do Norte)</option>
+                            <option value="CRA-RS">CRA-RS (Rio Grande do Sul)</option>
+                            <option value="CRA-RO">CRA-RO (Rondônia)</option>
+                            <option value="CRA-RR">CRA-RR (Roraima)</option>
+                            <option value="CRA-SC">CRA-SC (Santa Catarina)</option>
+                            <option value="CRA-SP">CRA-SP (São Paulo)</option>
+                            <option value="CRA-SE">CRA-SE (Sergipe)</option>
+                            <option value="CRA-TO">CRA-TO (Tocantins)</option>
+                        </select>
+                        <div id="box-setor-acoes" style="display:none; gap:8px; align-items:center; flex:1; max-width: 300px;">
+                            <label style="font-size:13px; font-weight:700;">Setor:</label>
+                            <select id="filtro-setor-acoes" onchange="window.renderAcoes()" style="border:1px solid var(--cinza-borda); border-radius:8px; padding:9px 12px; font-size:13px; font-family:'Sora',sans-serif; background:white; color:var(--texto); width:100%;">
+                                <option value="">Todos os Setores</option>
+                                <option value="Protocolo">Protocolo</option>
+                                <option value="Assessoria Jurídica">Assessoria Jurídica</option>
+                                <option value="Assessoria Especial de Auditoria">Assessoria Especial de Auditoria</option>
+                                <option value="Assessoria da Presidência">Assessoria da Presidência</option>
+                                <option value="Assessoria da Vice-Presidência">Assessoria da Vice-Presidência</option>
+                                <option value="Coordenadoria de Administração e Finanças">Coordenadoria de Administração e Finanças</option>
+                                <option value="Coordenadoria de Informática">Coordenadoria de Informática</option>
+                                <option value="Coordenadoria de Recursos Humanos">Coordenadoria de Recursos Humanos</option>
+                                <option value="Coordenadoria de Fiscalização e Registro">Coordenadoria de Fiscalização e Registro</option>
+                                <option value="Coordenadoria de Formação e Educação">Coordenadoria de Formação e Educação</option>
+                                <option value="Coordenadoria de Comunicação e Marketing">Coordenadoria de Comunicação e Marketing</option>
+                                <option value="Coordenadoria de Eventos Promoções">Coordenadoria de Eventos Promoções</option>
+                                <option value="Coordenadoria de Serviços aos Registrados">Coordenadoria de Serviços aos Registrados</option>
+                                <option value="Coordenadoria de Gestão Pública">Coordenadoria de Gestão Pública</option>
+                                <option value="Coordenadoria de Governança e Controle">Coordenadoria de Governança e Controle</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="acoes-container" class="project-list"></div>
@@ -303,6 +443,65 @@
                 <div class="topbar-left">
                     <h1>Indicadores Consolidados</h1>
                     <p>Visão global de desempenho: reúne as metas e resultados de todas as unidades.</p>
+                </div>
+            </div>
+            <div class="card" style="margin-bottom:20px; padding:16px 20px;">
+                <div style="display:flex; gap:12px; align-items:center; flex-wrap: wrap;">
+                    <div style="display:flex; gap:8px; align-items:center; flex:1; min-width: 250px;">
+                        <label style="font-size:13px; font-weight:700;">Filtrar por Entidade (CRA/CFA):</label>
+                        <select id="filtro-entidade-indicadores" onchange="window.toggleSetorIndicadores(); window.renderIndicadores()" style="border:1px solid var(--cinza-borda); border-radius:8px; padding:9px 12px; font-size:13px; font-family:'Sora',sans-serif; background:white; color:var(--texto); flex:1; max-width:300px;">
+                            <option value="">Todas as Unidades (Geral)</option>
+                            <option value="CFA">CFA - Conselho Federal de Administração</option>
+                            <option value="CRA-AC">CRA-AC (Acre)</option>
+                            <option value="CRA-AL">CRA-AL (Alagoas)</option>
+                            <option value="CRA-AP">CRA-AP (Amapá)</option>
+                            <option value="CRA-AM">CRA-AM (Amazonas)</option>
+                            <option value="CRA-BA">CRA-BA (Bahia)</option>
+                            <option value="CRA-CE">CRA-CE (Ceará)</option>
+                            <option value="CRA-DF">CRA-DF (Distrito Federal)</option>
+                            <option value="CRA-ES">CRA-ES (Espírito Santo)</option>
+                            <option value="CRA-GO">CRA-GO (Goiás)</option>
+                            <option value="CRA-MA">CRA-MA (Maranhão)</option>
+                            <option value="CRA-MT">CRA-MT (Mato Grosso)</option>
+                            <option value="CRA-MS">CRA-MS (Mato Grosso do Sul)</option>
+                            <option value="CRA-MG">CRA-MG (Minas Gerais)</option>
+                            <option value="CRA-PA">CRA-PA (Pará)</option>
+                            <option value="CRA-PB">CRA-PB (Paraíba)</option>
+                            <option value="CRA-PR">CRA-PR (Paraná)</option>
+                            <option value="CRA-PE">CRA-PE (Pernambuco)</option>
+                            <option value="CRA-PI">CRA-PI (Piauí)</option>
+                            <option value="CRA-RJ">CRA-RJ (Rio de Janeiro)</option>
+                            <option value="CRA-RN">CRA-RN (Rio Grande do Norte)</option>
+                            <option value="CRA-RS">CRA-RS (Rio Grande do Sul)</option>
+                            <option value="CRA-RO">CRA-RO (Rondônia)</option>
+                            <option value="CRA-RR">CRA-RR (Roraima)</option>
+                            <option value="CRA-SC">CRA-SC (Santa Catarina)</option>
+                            <option value="CRA-SP">CRA-SP (São Paulo)</option>
+                            <option value="CRA-SE">CRA-SE (Sergipe)</option>
+                            <option value="CRA-TO">CRA-TO (Tocantins)</option>
+                        </select>
+                    </div>
+                    <div id="box-setor-indicadores" style="display:none; gap:8px; align-items:center; flex:1; min-width: 250px;">
+                        <label style="font-size:13px; font-weight:700;">Câmara/Setor (CFA):</label>
+                        <select id="filtro-setor-indicadores" onchange="window.renderIndicadores()" style="border:1px solid var(--cinza-borda); border-radius:8px; padding:9px 12px; font-size:13px; font-family:'Sora',sans-serif; background:white; color:var(--texto); flex:1; max-width:300px;">
+                            <option value="">Todos os Setores</option>
+                            <option value="Protocolo">Protocolo</option>
+                            <option value="Assessoria Jurídica">Assessoria Jurídica</option>
+                            <option value="Assessoria Especial de Auditoria">Assessoria Especial de Auditoria</option>
+                            <option value="Assessoria da Presidência">Assessoria da Presidência</option>
+                            <option value="Assessoria da Vice-Presidência">Assessoria da Vice-Presidência</option>
+                            <option value="Coordenadoria de Administração e Finanças">Coordenadoria de Administração e Finanças</option>
+                            <option value="Coordenadoria de Informática">Coordenadoria de Informática</option>
+                            <option value="Coordenadoria de Recursos Humanos">Coordenadoria de Recursos Humanos</option>
+                            <option value="Coordenadoria de Fiscalização e Registro">Coordenadoria de Fiscalização e Registro</option>
+                            <option value="Coordenadoria de Formação e Educação">Coordenadoria de Formação e Educação</option>
+                            <option value="Coordenadoria de Comunicação e Marketing">Coordenadoria de Comunicação e Marketing</option>
+                            <option value="Coordenadoria de Eventos Promoções">Coordenadoria de Eventos Promoções</option>
+                            <option value="Coordenadoria de Serviços aos Registrados">Coordenadoria de Serviços aos Registrados</option>
+                            <option value="Coordenadoria de Gestão Pública">Coordenadoria de Gestão Pública</option>
+                            <option value="Coordenadoria de Governança e Controle">Coordenadoria de Governança e Controle</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div id="indicadores-content"></div>
@@ -337,120 +536,6 @@
         </div>
 
 
-        <div class="page" id="page-institucional">
-            <div class="topbar">
-                <div class="topbar-left">
-                    <h1>Diretriz Organizacional</h1>
-                    <p>Missão, visão, valores e identidade do Sistema CFA/CRAs</p>
-                </div>
-            </div>
-
-
-            <div class="grid-3" style="margin-bottom:24px;">
-                <div class="card" style="border-top: 4px solid var(--azul-cfa);">
-                    <div style="font-size: 16px; font-weight: 800; color: var(--azul-cfa); margin-bottom: 12px;">🎯
-                        Missão</div>
-                    <div style="font-size: 13px; line-height: 1.6;">"Fiscalizar, valorizar e promover o exercício do
-                        profissional de Administração, contribuindo com o desenvolvimento do país."</div>
-                </div>
-                <div class="card" style="border-top: 4px solid var(--azul-mid);">
-                    <div style="font-size: 16px; font-weight: 800; color: var(--azul-mid); margin-bottom: 12px;">🔭
-                        Visão</div>
-                    <div style="font-size: 13px; line-height: 1.6;">"Ser uma entidade reconhecida pela sociedade, capaz
-                        de assegurar a atuação plena dos profissionais de Administração."</div>
-                </div>
-                <div class="card" style="border-top: 4px solid var(--amarelo);">
-                    <div style="font-size: 16px; font-weight: 800; color: var(--amarelo); margin-bottom: 12px;">⭐
-                        Valores</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <span
-                            style="background: #FFF3E0; color: #E65100; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;">Ética</span>
-                        <span
-                            style="background: #FFF3E0; color: #E65100; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;">Inovação</span>
-                        <span
-                            style="background: #FFF3E0; color: #E65100; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;">Valorização
-                            da Profissão</span>
-                        <span
-                            style="background: #FFF3E0; color: #E65100; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;">Sustentabilidade</span>
-                        <span
-                            style="background: #FFF3E0; color: #E65100; padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 700;">Transparência</span>
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="section-title">As 4 Perspectivas Estratégicas (BSC adaptado)</div>
-            <div class="grid-2" style="margin-bottom: 32px;">
-                <div class="card p-sustent" style="border-left:5px solid var(--roxo);">
-                    <div class="p-tag"><span class="p-dot"></span>Base da Pirâmide</div>
-                    <div style="font-size:16px; font-weight:800; margin:10px 0 6px; color:var(--roxo);">Sustentabilidade
-                        Social e Ambiental</div>
-                    <div style="font-size:12px; color:var(--texto-sec);">Fundação do modelo — energia solar, ODS/ESG,
-                        economia circular, digitalização verde e apoio à sociedade.</div>
-                </div>
-                <div class="card p-processos" style="border-left:5px solid var(--azul-mid);">
-                    <div class="p-tag"><span class="p-dot"></span>2ª Perspectiva</div>
-                    <div style="font-size:16px; font-weight:800; margin:10px 0 6px; color:var(--azul-mid);">
-                        Desenvolvimento Institucional / Processos Internos</div>
-                    <div style="font-size:12px; color:var(--texto-sec);">Transformação digital, padronização,
-                        capacitação, gestão de indicadores e governança nos Regionais.</div>
-                </div>
-                <div class="card p-clientes" style="border-left:5px solid var(--vermelho);">
-                    <div class="p-tag"><span class="p-dot"></span>3ª Perspectiva</div>
-                    <div style="font-size:16px; font-weight:800; margin:10px 0 6px; color:var(--vermelho);">Clientes
-                    </div>
-                    <div style="font-size:12px; color:var(--texto-sec);">Fortalecimento das competências dos
-                        registrados, identidade profissional e projetos inovadores para administração.</div>
-                </div>
-                <div class="card p-financeiro" style="border-left:5px solid var(--verde);">
-                    <div class="p-tag"><span class="p-dot"></span>Topo da Pirâmide</div>
-                    <div style="font-size:16px; font-weight:800; margin:10px 0 6px; color:var(--verde);">Financeira /
-                        Sustentabilidade Econômica</div>
-                    <div style="font-size:12px; color:var(--texto-sec);">Fiscalização unificada, gestão financeira
-                        aprimorada e prospecção de novas fontes de receita.</div>
-                </div>
-            </div>
-
-
-            <div class="section-title">Metodologia PES — Planejamento Estratégico Sustentável</div>
-            <div class="card">
-                <div class="grid-4">
-                    <div style="text-align:center; padding:16px;">
-                        <div style="font-size:28px; margin-bottom:8px;">🔍</div>
-                        <div style="font-size:12px; font-weight:800; color:var(--azul-cfa); margin-bottom:4px;">ETAPA 1
-                        </div>
-                        <div style="font-size:13px; font-weight:700;">Diagnóstico do Ambiente</div>
-                        <div style="font-size:11px; color:var(--texto-sec); margin-top:4px;">Tendências, SWOT, PESTEL
-                        </div>
-                    </div>
-                    <div style="text-align:center; padding:16px;">
-                        <div style="font-size:28px; margin-bottom:8px;">🏛️</div>
-                        <div style="font-size:12px; font-weight:800; color:var(--azul-cfa); margin-bottom:4px;">ETAPA 2
-                        </div>
-                        <div style="font-size:13px; font-weight:700;">Diretriz Organizacional</div>
-                        <div style="font-size:11px; color:var(--texto-sec); margin-top:4px;">Missão, visão, valores
-                        </div>
-                    </div>
-                    <div style="text-align:center; padding:16px;">
-                        <div style="font-size:28px; margin-bottom:8px;">🗺️</div>
-                        <div style="font-size:12px; font-weight:800; color:var(--azul-cfa); margin-bottom:4px;">ETAPA 3
-                        </div>
-                        <div style="font-size:13px; font-weight:700;">Revisão do Mapa</div>
-                        <div style="font-size:11px; color:var(--texto-sec); margin-top:4px;">BSC e validação</div>
-                    </div>
-                    <div style="text-align:center; padding:16px;">
-                        <div style="font-size:28px; margin-bottom:8px;">📊</div>
-                        <div style="font-size:12px; font-weight:800; color:var(--azul-cfa); margin-bottom:4px;">ETAPA 4
-                        </div>
-                        <div style="font-size:13px; font-weight:700;">Elaboração do Mapa</div>
-                        <div style="font-size:11px; color:var(--texto-sec); margin-top:4px;">ODS + Plano de
-                            Sustentabilidade</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
         <div class="page" id="page-relatorio">
             <div class="topbar">
                 <div class="topbar-left">
@@ -475,12 +560,11 @@
                 </div>
                 <hr style="margin:20px 0;">
 
-
-                <h2 style="margin-bottom:10px;">Solicitações de Alterações</h2>
-
-
-                <div id="lista-solicitacoes">
-                    <p style="color:var(--texto-sec); font-size: 13px;">Carregando solicitações...</p>
+                <div id="solicitacoes-admin-section" style="display:none;">
+                    <h2 style="margin-bottom:10px;">Solicitações de Alterações</h2>
+                    <div id="lista-solicitacoes">
+                        <p style="color:var(--texto-sec); font-size: 13px;">Carregando solicitações...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -500,6 +584,94 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="document.getElementById('modal-justificativa-overlay').classList.remove('open')">Cancelar</button>
                 <button class="btn btn-danger" onclick="window.confirmarExclusao()">Confirmar Solicitação de Exclusão</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-swot-overlay" onclick="window.fecharModalSwot()">
+        <div class="modal swot-modal" onclick="event.stopPropagation()">
+            <div class="swot-modal-header">
+                <div class="swot-modal-icon">✚</div>
+                <div>
+                    <h2>Adicionar item à análise SWOT</h2>
+                    <p>Crie um novo ponto para a sua matriz estratégica.</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Categoria</label>
+                <select id="swot-modal-tipo">
+                    <option value="forcas">Forças</option>
+                    <option value="fraquezas">Fraquezas</option>
+                    <option value="oportunidades">Oportunidades</option>
+                    <option value="ameacas">Ameaças</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Descrição</label>
+                <textarea id="swot-modal-descricao" placeholder="Ex: Novo programa de capacitação para os profissionais da área..." style="min-height: 110px;"></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="window.fecharModalSwot()">Cancelar</button>
+                <button class="btn btn-primary" onclick="window.salvarNovoItemSwot()">Salvar item</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-cra-admin-overlay" onclick="window.fecharModalCraAdmin()">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 480px;">
+            <h2>Criar administrador do CRA</h2>
+            <p style="font-size: 13px; color: var(--texto-sec); margin-bottom: 16px;">Defina um novo administrador regional para aprovar usuários do seu CRA.</p>
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" id="cra-admin-nome" placeholder="Nome completo">
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="cra-admin-email" placeholder="email@cra.org.br">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="cra-admin-senha" placeholder="Crie uma senha temporária">
+            </div>
+            <div class="form-group">
+                <label>CRA</label>
+                <select id="cra-admin-entidade">
+                    <option value="">Selecione o CRA</option>
+                    <option value="CRA-AC">CRA-AC</option>
+                    <option value="CRA-AL">CRA-AL</option>
+                    <option value="CRA-AP">CRA-AP</option>
+                    <option value="CRA-AM">CRA-AM</option>
+                    <option value="CRA-BA">CRA-BA</option>
+                    <option value="CRA-CE">CRA-CE</option>
+                    <option value="CRA-DF">CRA-DF</option>
+                    <option value="CRA-ES">CRA-ES</option>
+                    <option value="CRA-GO">CRA-GO</option>
+                    <option value="CRA-MA">CRA-MA</option>
+                    <option value="CRA-MT">CRA-MT</option>
+                    <option value="CRA-MS">CRA-MS</option>
+                    <option value="CRA-MG">CRA-MG</option>
+                    <option value="CRA-PA">CRA-PA</option>
+                    <option value="CRA-PB">CRA-PB</option>
+                    <option value="CRA-PR">CRA-PR</option>
+                    <option value="CRA-PE">CRA-PE</option>
+                    <option value="CRA-PI">CRA-PI</option>
+                    <option value="CRA-RJ">CRA-RJ</option>
+                    <option value="CRA-RN">CRA-RN</option>
+                    <option value="CRA-RS">CRA-RS</option>
+                    <option value="CRA-RO">CRA-RO</option>
+                    <option value="CRA-RR">CRA-RR</option>
+                    <option value="CRA-SC">CRA-SC</option>
+                    <option value="CRA-SP">CRA-SP</option>
+                    <option value="CRA-SE">CRA-SE</option>
+                    <option value="CRA-TO">CRA-TO</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="window.fecharModalCraAdmin()">Cancelar</button>
+                <button class="btn btn-primary" onclick="window.salvarCraAdmin()">Criar conta</button>
             </div>
         </div>
     </div>
@@ -548,7 +720,7 @@
             <div class="grid-3">
                 <div class="form-group"><label style="font-size: 13px;">Responsável pelo Lançamento</label><input
                         type="text" id="m-responsavel" placeholder="Nome/Departamento"></div>
-                <div class="form-group"><label>Prazo Final Estimado</label><input type="date" id="m-prazo"></div>
+                <div class="form-group"><label>Prazo Final Estimado *</label><input type="date" id="m-prazo"></div>
                 <div class="form-group"><label>Orçamento (R$)</label><input type="number" id="m-orcamento"
                         placeholder="Ex: 5000"></div>
             </div>
@@ -559,7 +731,7 @@
                 sucesso?</h3>
 
             <div class="grid-2">
-                <div class="form-group"><label>Nome do Indicador Principal</label><input type="text"
+                <div class="form-group"><label>Nome do Indicador Principal *</label><input type="text"
                         id="m-indicador-nome" placeholder="Ex: Nº de participantes, Aprovação de lei..."></div>
                 <div class="form-group"><label>Tipo de Indicador *</label><select id="m-indicador-tipo"
                         onchange="window.toggleIndicadorCampos()">
@@ -571,14 +743,14 @@
 
 
             <div id="box-ind-numerico" class="grid-2">
-                <div class="form-group"><label>Meta Numérica</label><input type="number" id="m-meta-num"
+                <div class="form-group"><label>Meta Numérica *</label><input type="number" id="m-meta-num"
                         placeholder="0"></div>
-                <div class="form-group"><label>Resultado Atual</label><input type="number" id="m-res-num"
+                <div class="form-group"><label>Resultado Atual *</label><input type="number" id="m-res-num"
                         placeholder="0"></div>
             </div>
             <div id="box-ind-data" class="grid-2" style="display:none;">
-                <div class="form-group"><label>Data Limite / Prometida</label><input type="date" id="m-meta-data"></div>
-                <div class="form-group"><label>Data Realizada</label><input type="date" id="m-res-data"></div>
+                <div class="form-group"><label>Data Limite / Prometida *</label><input type="date" id="m-meta-data"></div>
+                <div class="form-group"><label>Data Realizada *</label><input type="date" id="m-res-data"></div>
             </div>
             <div id="box-ind-quali" class="grid-2" style="display:none; align-items:center;">
                 <div class="form-group"><label>Descrição da Meta Esperada</label><input type="text" id="m-meta-quali"
@@ -592,6 +764,21 @@
             </div>
 
 
+            <hr style="border:0; border-top:1px solid var(--cinza-borda); margin: 24px 0;">
+            <h3 style="font-size:14px; font-weight:800; color:var(--azul-cfa); margin-bottom:12px;">📎 Anexo do Projeto / Atividade</h3>
+            <div id="modal-anexo-preview" style="display:none; align-items:center; gap:8px; background:#EAF1FF; border:1px solid var(--azul-mid); border-radius:8px; padding:10px 14px; margin-bottom:10px;">
+                <span style="font-size:18px;">📄</span>
+                <span id="modal-anexo-nome" style="font-size:13px; font-weight:600; color:var(--azul-mid); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+                <a id="modal-anexo-link" href="#" target="_blank" style="font-size:11px; font-weight:700; color:var(--azul-mid); text-decoration:none; white-space:nowrap;">Ver arquivo</a>
+                <button onclick="window.removerAnexoModal()" style="background:none; border:none; color:var(--vermelho); cursor:pointer; font-size:16px; line-height:1; padding:0 4px;" title="Remover anexo">✖</button>
+            </div>
+            <div id="modal-anexo-upload-area" style="display:flex; align-items:center; gap:10px;">
+                <button type="button" onclick="document.getElementById('modal-file-input').click()" style="background:#F0F4FA; border:1px dashed var(--cinza-borda); color:var(--texto-sec); cursor:pointer; font-size:12px; font-weight:700; padding:8px 16px; border-radius:8px; display:flex; align-items:center; gap:6px;">
+                    📎 Selecionar Arquivo
+                </button>
+                <span id="modal-anexo-status" style="font-size:12px; color:var(--texto-sec);">Nenhum arquivo selecionado</span>
+            </div>
+
             <div class="modal-actions">
                 <button class="btn btn-danger" id="btn-excluir" onclick="window.excluirAcao()"
                     style="display:none; margin-right:auto;">Excluir</button>
@@ -604,6 +791,7 @@
 
 
     <input type="file" id="global-file-input" style="display:none;" onchange="window.handleFileUpload(event)">
+    <input type="file" id="modal-file-input" style="display:none;" onchange="window.handleModalAnexoUpload(event)">
     <div class="toast" id="toast"></div>
 
 

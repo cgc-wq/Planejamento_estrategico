@@ -1,8 +1,8 @@
 // js/api.js
-import { state } from './data.js';
+import { state, PERSPECTIVAS } from './data.js';
 import { showToast } from './utils.js';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:8081/api';
 
 // Auxiliar para pegar o token
 const getAuthHeaders = () => {
@@ -57,19 +57,34 @@ export async function carregarAcoesFirebase(grupoAcesso) {
         });
         const data = await res.json();
         
-        state.acoes = data.map(p => ({
-            ...p,
-            id: p.id.toString(),
-            objetivo: p.objetivo_id,
-            prazo: p.prazo ? p.prazo.split('T')[0] : '',
-            meta: p.meta_num ? Number(p.meta_num) : 0,
-            resultado: p.res_num ? Number(p.res_num) : 0,
-            meta_data: p.meta_data ? p.meta_data.split('T')[0] : '',
-            resultado_data: p.res_data ? p.res_data.split('T')[0] : '',
-            meta_quali: p.meta_quali,
-            progresso_quali: p.res_quali,
-            indicador: p.indicador_nome
-        }));
+        state.acoes = data.map(p => {
+            let grupo = p.unidade;
+            let setor = '';
+            if (p.unidade && p.unidade.startsWith('CFA - ')) {
+                grupo = 'CFA';
+                setor = p.unidade.replace('CFA - ', '');
+            } else if (p.unidade === 'CFA') {
+                grupo = 'CFA';
+            }
+            
+            return {
+                ...p,
+                grupo,
+                setor,
+                id: p.id.toString(),
+                objetivo: p.objetivo_id,
+                prazo: p.prazo ? p.prazo.split('T')[0] : '',
+                meta: p.meta_num ? Number(p.meta_num) : 0,
+                resultado: p.res_num ? Number(p.res_num) : 0,
+                meta_data: p.meta_data ? p.meta_data.split('T')[0] : '',
+                resultado_data: p.res_data ? p.res_data.split('T')[0] : '',
+                meta_quali: p.meta_quali,
+                progresso_quali: p.res_quali,
+                indicador: p.indicador_nome,
+                anexoUrl: p.anexo_url,
+                anexoNome: p.anexo_nome
+            };
+        });
 
         if (window.renderAcoes) window.renderAcoes();
         if (window.updateDashboard) window.updateDashboard();
@@ -84,21 +99,37 @@ export async function carregarTodasAcoesFirebase() {
             headers: getAuthHeaders()
         });
         const data = await res.json();
-        state.todasAcoes = data.map(p => ({
-            ...p,
-            id: p.id.toString(),
-            objetivo: p.objetivo_id,
-            prazo: p.prazo ? p.prazo.split('T')[0] : '',
-            meta: p.meta_num ? Number(p.meta_num) : 0,
-            resultado: p.res_num ? Number(p.res_num) : 0,
-            meta_data: p.meta_data ? p.meta_data.split('T')[0] : '',
-            resultado_data: p.res_data ? p.res_data.split('T')[0] : '',
-            meta_quali: p.meta_quali,
-            progresso_quali: p.res_quali,
-            indicador: p.indicador_nome
-        }));
+        state.todasAcoes = data.map(p => {
+            let grupo = p.unidade;
+            let setor = '';
+            if (p.unidade && p.unidade.startsWith('CFA - ')) {
+                grupo = 'CFA';
+                setor = p.unidade.replace('CFA - ', '');
+            } else if (p.unidade === 'CFA') {
+                grupo = 'CFA';
+            }
+            
+            return {
+                ...p,
+                grupo,
+                setor,
+                id: p.id.toString(),
+                objetivo: p.objetivo_id,
+                prazo: p.prazo ? p.prazo.split('T')[0] : '',
+                meta: p.meta_num ? Number(p.meta_num) : 0,
+                resultado: p.res_num ? Number(p.res_num) : 0,
+                meta_data: p.meta_data ? p.meta_data.split('T')[0] : '',
+                resultado_data: p.res_data ? p.res_data.split('T')[0] : '',
+                meta_quali: p.meta_quali,
+                progresso_quali: p.res_quali,
+                indicador: p.indicador_nome,
+                anexoUrl: p.anexo_url,
+                anexoNome: p.anexo_nome
+            };
+        });
         if (window.renderIndicadores) window.renderIndicadores();
         if (window.renderSWOT) window.renderSWOT();
+        if (window.updateDashboard) window.updateDashboard();
     } catch (e) {
         console.error(e);
     }
@@ -114,6 +145,7 @@ export async function carregarObjetivosFirebase() {
         if (pageObj && pageObj.classList.contains('active')) {
             if (window.renderObjetivosEstrategicos) window.renderObjetivosEstrategicos();
         }
+        if (window.updateDashboard) window.updateDashboard();
     } catch (e) {
         console.error(e);
     }
@@ -285,7 +317,23 @@ export async function atualizarStatusUsuario(uid, novoStatus) {
         showToast('❌ Erro ao atualizar usuário');
     }
 }
-
+export async function criarCraAdmin(data) {
+    try {
+        const res = await fetch(`${API_URL}/admin/cra-admins`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.message || 'Erro ao criar administrador');
+        showToast('✅ Administrador do CRA criado com sucesso!');
+        if (window.renderAdminUsers) window.renderAdminUsers();
+        return true;
+    } catch (e) {
+        showToast('❌ ' + e.message);
+        return false;
+    }
+}
 // Implementação de Upload (Multer no Backend)
 export async function handleFileUpload(event) {
     const file = event.target.files[0];
@@ -342,6 +390,41 @@ export async function handleFileUpload(event) {
     }
 }
 
+// Upload de anexo direto no modal de cadastro/edição
+export async function handleModalAnexoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const status = document.getElementById('modal-anexo-status');
+    status.textContent = '⏳ Enviando...';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch(`${API_URL}/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('pes_token')}` },
+            body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        state.modalAnexo = { url: data.url, name: data.name };
+
+        document.getElementById('modal-anexo-nome').textContent = data.name;
+        document.getElementById('modal-anexo-link').href = data.url;
+        document.getElementById('modal-anexo-preview').style.display = 'flex';
+        document.getElementById('modal-anexo-upload-area').style.display = 'none';
+        showToast('✅ Arquivo pronto! Clique em Salvar para confirmar.');
+    } catch (e) {
+        status.textContent = 'Nenhum arquivo selecionado';
+        showToast('❌ Erro no upload: ' + e.message);
+    } finally {
+        event.target.value = '';
+    }
+}
+
 export async function carregarSolicitacoesAdmin() {
     try {
         const res = await fetch(`${API_URL}/admin/solicitacoes`, {
@@ -382,5 +465,174 @@ export async function rejeitarSolicitacao(id) {
         if (window.renderAdminSolicitacoes) window.renderAdminSolicitacoes();
     } catch (e) {
         showToast('❌ Erro ao rejeitar');
+    }
+}
+
+export async function solicitarResetSenha(email) {
+    try {
+        const res = await fetch(`${API_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao solicitar redefinição');
+
+        showToast('✅ Verifique seu e-mail para redefinir a senha.');
+        return true;
+    } catch (error) {
+        showToast(`❌ ${error.message}`);
+        return false;
+    }
+}
+
+export async function redefinirSenha(token, novaSenha) {
+    try {
+        const res = await fetch(`${API_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, senha: novaSenha })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao redefinir senha');
+
+        showToast('✅ Senha redefinida com sucesso!');
+        return true;
+    } catch (error) {
+        showToast(`❌ ${error.message}`);
+        return false;
+    }
+}
+
+// =============================================
+// NOMES CUSTOMIZADOS (Perspectivas e Objetivos)
+// =============================================
+
+export async function carregarNomesCustom() {
+    try {
+        const res = await fetch(`${API_URL}/admin/nomes-custom`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) return;
+        const mapa = await res.json();
+
+        // Aplica os nomes customizados ao PERSPECTIVAS em memória
+        Object.entries(PERSPECTIVAS).forEach(([key, p]) => {
+            const chavePersp = `persp_${key}`;
+            if (mapa[chavePersp]) {
+                p.nome = mapa[chavePersp];
+            }
+            p.objetivos.forEach(obj => {
+                const chaveObj = `obj_${obj.id}`;
+                if (mapa[chaveObj]) {
+                    obj.nome = mapa[chaveObj];
+                }
+            });
+        });
+
+        // Re-renderiza as views que usam esses nomes
+        if (window.renderObjetivosEstrategicos) window.renderObjetivosEstrategicos();
+        if (window.renderMapa) window.renderMapa();
+        if (window.renderIndicadores) window.renderIndicadores();
+        if (window.updateDashboard) window.updateDashboard();
+    } catch (e) {
+        console.error('[NomesCustom] Erro ao carregar:', e);
+    }
+}
+
+export async function salvarNomeCustom(chave, nome) {
+    try {
+        const res = await fetch(`${API_URL}/admin/nomes-custom`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ chave, nome })
+        });
+        if (!res.ok) throw new Error();
+        showToast('✅ Nome atualizado com sucesso!');
+        // Recarrega para aplicar em todas as views
+        await carregarNomesCustom();
+    } catch (e) {
+        showToast('❌ Erro ao salvar nome');
+    }
+}
+
+// =============================================
+// GERENCIAMENTO DE ITENS SWOT
+// =============================================
+
+export async function carregarItensSwot() {
+    try {
+        const res = await fetch(`${API_URL}/admin/swot-items`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) return;
+        const swotItems = await res.json();
+        
+        // Armazena no state para uso global
+        state.swotItems = swotItems;
+        
+        // Re-renderiza a view SWOT
+        if (window.renderSWOT) window.renderSWOT();
+    } catch (e) {
+        console.error('[SWOT] Erro ao carregar itens:', e);
+    }
+}
+
+export async function salvarItemSwot(tipo, id, descricao) {
+    try {
+        const res = await fetch(`${API_URL}/admin/swot-items/${tipo}/${id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ descricao })
+        });
+        
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'Erro ao salvar');
+        }
+        
+        showToast('✅ Item atualizado com sucesso!');
+        await carregarItensSwot();
+    } catch (e) {
+        showToast('❌ ' + e.message);
+    }
+}
+
+export async function adicionarItemSwot(tipo, descricao) {
+    try {
+        const res = await fetch(`${API_URL}/admin/swot-items`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ tipo, descricao })
+        });
+        
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'Erro ao criar');
+        }
+        
+        showToast('✅ Item adicionado com sucesso!');
+        await carregarItensSwot();
+    } catch (e) {
+        showToast('❌ ' + e.message);
+    }
+}
+
+export async function deletarItemSwot(tipo, id) {
+    try {
+        const res = await fetch(`${API_URL}/admin/swot-items/${tipo}/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        
+        if (!res.ok) {
+            const error = await res.json();
+            throw new Error(error.message || 'Erro ao deletar');
+        }
+        
+        showToast('🗑️ Item removido.');
+        await carregarItensSwot();
+    } catch (e) {
+        showToast('❌ ' + e.message);
     }
 }

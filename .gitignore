@@ -1,16 +1,12 @@
-# Diretorios de dependencias (muito pesados para o Git)
 node_modules/
 backend/node_modules/
 
-# Arquivos de configuracao local e credenciais (SEGURANCA CRITICA!)
 .env
 backend/.env
 
-# Uploads locais (nao devem ir para o Git)
 backend/uploads/*
 !backend/uploads/.gitkeep
 
-# Arquivos temporarios e de editores
 .DS_Store
 Thumbs.db
 .vscode/

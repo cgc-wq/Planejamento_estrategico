@@ -22,6 +22,9 @@ export function openModal(id = null) {
     m('modal-title').textContent = id ? 'Editar Registro' : 'Novo Cadastro';
     m('btn-excluir').style.display = id ? 'inline-flex' : 'none';
 
+    ['m-nome', 'm-prazo', 'm-indicador-nome', 'm-meta-num', 'm-res-num', 'm-meta-data', 'm-res-data']
+        .forEach(elId => document.getElementById(elId)?.classList.remove('campo-invalido'));
+
     if (id) {
         const a = state.acoes.find(x => x.id === id);
         if (!a) return;
@@ -61,13 +64,56 @@ export function openModal(id = null) {
         m('m-meta-quali').value = ''; m('m-res-quali').value = 0; m('val-quali').innerText = '0%';
     }
 
+    // Seção de anexo
+    state.modalAnexo = null;
+    const preview = document.getElementById('modal-anexo-preview');
+    const uploadArea = document.getElementById('modal-anexo-upload-area');
+    const status = document.getElementById('modal-anexo-status');
+
+    if (id) {
+        const a = state.acoes.find(x => x.id === id);
+        if (a && a.anexoUrl) {
+            state.modalAnexo = { url: a.anexoUrl, name: a.anexoNome || 'Arquivo anexado' };
+            document.getElementById('modal-anexo-nome').textContent = state.modalAnexo.name;
+            document.getElementById('modal-anexo-link').href = state.modalAnexo.url;
+            preview.style.display = 'flex';
+            uploadArea.style.display = 'none';
+        } else {
+            preview.style.display = 'none';
+            uploadArea.style.display = 'flex';
+            status.textContent = 'Nenhum arquivo selecionado';
+        }
+    } else {
+        preview.style.display = 'none';
+        uploadArea.style.display = 'flex';
+        status.textContent = 'Nenhum arquivo selecionado';
+    }
+
     toggleTipoCampos();
     toggleIndicadorCampos();
     document.getElementById('modal-overlay').classList.add('open');
+
+    // Remove o destaque de erro assim que o usuário corrige o campo
+    ['m-nome', 'm-prazo', 'm-indicador-nome', 'm-meta-num', 'm-res-num', 'm-meta-data', 'm-res-data']
+        .forEach(elId => {
+            const el = document.getElementById(elId);
+            if (el && !el.dataset.validacaoBind) {
+                el.addEventListener('input', () => el.classList.remove('campo-invalido'));
+                el.dataset.validacaoBind = '1';
+            }
+        });
 }
 
 export function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
 export function closeModalOutside(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+
+export function removerAnexoModal() {
+    state.modalAnexo = null;
+    document.getElementById('modal-anexo-preview').style.display = 'none';
+    document.getElementById('modal-anexo-upload-area').style.display = 'flex';
+    document.getElementById('modal-anexo-status').textContent = 'Nenhum arquivo selecionado';
+    document.getElementById('modal-file-input').value = '';
+}
 
 export function updateObjetivos() {
     const p = document.getElementById('m-perspectiva').value;
@@ -100,8 +146,39 @@ export function recalcularExecucao(projeto) {
 }
 
 export function salvarAcao() {
+    // Limpa marcações de erro anteriores
+    ['m-nome', 'm-prazo', 'm-indicador-nome', 'm-meta-num', 'm-res-num', 'm-meta-data', 'm-res-data']
+        .forEach(elId => document.getElementById(elId)?.classList.remove('campo-invalido'));
+
     const nome = document.getElementById('m-nome').value.trim();
-    if (!nome) { showToast('⚠️ Informe o nome do Projeto/Atividade'); return; }
+    const prazo = document.getElementById('m-prazo').value;
+    const indicadorNome = document.getElementById('m-indicador-nome').value.trim();
+    const indTipoCheck = document.getElementById('m-indicador-tipo').value;
+
+    const camposInvalidos = [];
+
+    if (!nome) camposInvalidos.push({ id: 'm-nome', msg: 'Informe o nome do Projeto/Atividade' });
+    if (!prazo) camposInvalidos.push({ id: 'm-prazo', msg: 'Informe o prazo final estimado' });
+    if (!indicadorNome) camposInvalidos.push({ id: 'm-indicador-nome', msg: 'Informe o nome do indicador' });
+
+    if (indTipoCheck === 'numerico') {
+        const metaNum = document.getElementById('m-meta-num').value;
+        const resNum = document.getElementById('m-res-num').value;
+        if (metaNum === '' || metaNum === null) camposInvalidos.push({ id: 'm-meta-num', msg: 'Informe a meta numérica' });
+        if (resNum === '' || resNum === null) camposInvalidos.push({ id: 'm-res-num', msg: 'Informe o resultado atual' });
+    } else if (indTipoCheck === 'data') {
+        const metaData = document.getElementById('m-meta-data').value;
+        const resData = document.getElementById('m-res-data').value;
+        if (!metaData) camposInvalidos.push({ id: 'm-meta-data', msg: 'Informe a data-meta (limite/prometida)' });
+        if (!resData) camposInvalidos.push({ id: 'm-res-data', msg: 'Informe a data-resultado (realizada)' });
+    }
+
+    if (camposInvalidos.length > 0) {
+        camposInvalidos.forEach(c => document.getElementById(c.id)?.classList.add('campo-invalido'));
+        showToast('⚠️ ' + camposInvalidos[0].msg);
+        document.getElementById(camposInvalidos[0].id)?.focus();
+        return;
+    }
 
     const acaoExistente = state.editingId ? state.acoes.find(x => x.id === state.editingId) : null;
     const indTipo = document.getElementById('m-indicador-tipo').value;
@@ -114,6 +191,9 @@ export function salvarAcao() {
             unidadeCalculada = state.currentUser.entidade === 'CFA' 
                 ? `CFA - ${state.currentUser.setor}` 
                 : state.currentUser.entidade;
+        } else if (state.currentUser.role === 'cra_admin' && state.currentUser.cra_admin_scope) {
+            // Admin de CRA: usa o scope diretamente (ex: 'CRA-SP')
+            unidadeCalculada = state.currentUser.cra_admin_scope;
         } else {
             unidadeCalculada = state.currentUser.grupo;
         }
@@ -144,7 +224,9 @@ export function salvarAcao() {
         execucao: 0,
         acoes_execucao: acaoExistente ? (acaoExistente.acoes_execucao || []) : [],
         entregas_periodicas: acaoExistente ? (acaoExistente.entregas_periodicas || {}) : {},
-        criadoEm: acaoExistente ? acaoExistente.criadoEm : new Date().toISOString()
+        criadoEm: acaoExistente ? acaoExistente.criadoEm : new Date().toISOString(),
+        anexoUrl: state.modalAnexo ? state.modalAnexo.url : (acaoExistente ? (acaoExistente.anexoUrl || null) : null),
+        anexoNome: state.modalAnexo ? state.modalAnexo.name : (acaoExistente ? (acaoExistente.anexoNome || null) : null)
     };
 
     recalcularExecucao(acaoData);
@@ -182,10 +264,26 @@ export function renderAcoes() {
     const busca = document.getElementById('filtro-busca').value.toLowerCase();
     const fPersp = document.getElementById('filtro-perspectiva').value;
     const fStatus = document.getElementById('filtro-status').value;
+    
+    const adminFiltrosAtivos = document.getElementById('admin-filtros-acoes') && document.getElementById('admin-filtros-acoes').style.display !== 'none';
+    let fEntidade = '';
+    let fSetor = '';
+    if (adminFiltrosAtivos) {
+        fEntidade = document.getElementById('filtro-entidade-acoes').value;
+        if (fEntidade === 'CFA') {
+            fSetor = document.getElementById('filtro-setor-acoes').value;
+        }
+    }
 
     let filtradas = state.acoes.filter(a => {
         if (fPersp && a.perspectiva !== fPersp) return false;
         if (fStatus && a.status !== fStatus) return false;
+        
+        if (adminFiltrosAtivos) {
+            if (fEntidade && a.grupo !== fEntidade) return false;
+            if (fSetor && a.setor !== fSetor) return false;
+        }
+        
         if (busca && !a.nome.toLowerCase().includes(busca) && !a.objetivo.toLowerCase().includes(busca)) return false;
         return true;
     });
@@ -430,7 +528,10 @@ export function renderAcoes() {
                </div>
             </div>
             
-            <button class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="window.openModal('${a.id}')">Editar Ficha Completa</button>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="window.openModal('${a.id}')">Editar Ficha Completa</button>
+              ${a.anexoUrl ? `<a href="${a.anexoUrl}" target="_blank" style="background:#EAF1FF; color:var(--azul-mid); padding:5px 10px; border-radius:6px; font-size:11px; font-weight:700; text-decoration:none; border:1px solid var(--azul-mid);">📎 ${escapeHTML(a.anexoNome || 'Ver Anexo')}</a>` : ''}
+            </div>
           </div>
 
           <div>${corpoAcaoHtml}</div>

@@ -897,6 +897,13 @@ body {
     border-color: var(--azul-mid);
 }
 
+.form-group input.campo-invalido,
+.form-group select.campo-invalido,
+.form-group textarea.campo-invalido {
+    border-color: var(--vermelho);
+    box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.12);
+}
+
 .form-group textarea {
     resize: vertical;
     min-height: 80px;
@@ -909,6 +916,39 @@ body {
     margin-top: 24px;
 }
 
+.swot-modal {
+    max-width: 520px;
+}
+
+.swot-modal-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.swot-modal-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--azul-cfa), var(--azul-mid));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 8px 18px rgba(20, 80, 140, 0.2);
+}
+
+.swot-modal-header h2 {
+    margin-bottom: 6px;
+}
+
+.swot-modal-header p {
+    font-size: 13px;
+    color: var(--texto-sec);
+    margin: 0;
+}
 
 .btn {
     display: inline-flex;
@@ -1419,4 +1459,39 @@ body {
     /* ...mas NUNCA força a caixa a crescer além do limite */
     word-wrap: break-word;
     overflow-wrap: break-word;
+}
+
+/* ===== BOTÃO DE EDIÇÃO DE NOMES (Admin) ===== */
+.btn-edit-nome {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    opacity: 0.4;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.btn-edit-nome:hover {
+    opacity: 1;
+    background: rgba(11, 44, 110, 0.08);
+    border-color: var(--azul-cfa);
+    transform: scale(1.15);
+}
+
+.input-edit-nome:focus {
+    border-color: var(--azul-mid) !important;
+    box-shadow: 0 0 0 3px rgba(23, 86, 184, 0.15);
+}
+
+.edit-nome-inline {
+    animation: fadeInEdit 0.2s ease;
+}
+
+@keyframes fadeInEdit {
+    from { opacity: 0; transform: translateY(-2px); }
+    to { opacity: 1; transform: translateY(0); }
 }
