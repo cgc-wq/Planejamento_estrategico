@@ -6,6 +6,11 @@ export function showPage(page, el) {
     if (page === 'admin') {
         if (window.renderAdminUsers) window.renderAdminUsers();
         if (window.renderAdminSolicitacoes) window.renderAdminSolicitacoes();
+        const section = document.getElementById('solicitacoes-admin-section');
+        if (section) {
+            const isCraAdmin = window.state && window.state.currentUser && window.state.currentUser.role === 'cra_admin';
+            section.style.display = isCraAdmin ? 'none' : 'block';
+        }
     }
 
     const targetPage = document.getElementById('page-' + page);
@@ -18,6 +23,7 @@ export function showPage(page, el) {
     }
     if (page === 'objetivos' && window.renderObjetivosEstrategicos) window.renderObjetivosEstrategicos();
     if (page === 'indicadores' && window.renderIndicadores) window.renderIndicadores();
+    if (page === 'swot' && window.carregarItensSwot) window.carregarItensSwot();
     if (page === 'relatorio' && window.renderRelatorio) window.renderRelatorio();
 
     return false;

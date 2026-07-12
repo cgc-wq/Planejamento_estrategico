@@ -54,8 +54,10 @@ window.toggleSubAcaoInline = acoes.toggleSubAcaoInline;
 window.removerSubAcaoInline = acoes.removerSubAcaoInline;
 window.triggerEntregaUpload = acoes.triggerEntregaUpload;
 window.handleFileUpload = api.handleFileUpload; // Vincula ao api.js refatorado
+window.handleModalAnexoUpload = api.handleModalAnexoUpload;
 window.triggerFileUpload = acoes.triggerFileUpload;
 window.removerAnexo = acoes.removerAnexo;
+window.removerAnexoModal = acoes.removerAnexoModal;
 
 // 4. Telas e Gráficos (Views & Dashboard)
 window.renderObjetivosEstrategicos = views.renderObjetivosEstrategicos;
@@ -65,19 +67,283 @@ window.renderSWOT = views.renderSWOT;
 window.renderRelatorio = views.renderRelatorio;
 window.updateDashboard = dashboard.updateDashboard;
 window.renderCharts = dashboard.renderCharts;
+window.setObjetivosView = dashboard.setObjetivosView;
+window.filtrarObjetivosPorPerspectiva = dashboard.filtrarObjetivosPorPerspectiva;
 window.fazerCadastro = api.fazerCadastro;
+
+// 5. Edição de Nomes (Perspectivas/Objetivos)
+window.salvarNomeCustom = api.salvarNomeCustom;
+window.carregarNomesCustom = api.carregarNomesCustom;
+
+// 6. Gerenciamento de Itens SWOT
+window.carregarItensSwot = api.carregarItensSwot;
+window.salvarItemSwot = api.salvarItemSwot;
+window.adicionarItemSwot = api.adicionarItemSwot;
+window.deletarItemSwot = api.deletarItemSwot;
+window.carregarNomesCustom = api.carregarNomesCustom;
+
+// Função para iniciar a edição inline de um nome
+window.iniciarEdicaoNome = function(chave, nomeAtual, btnElement) {
+    const parentDiv = btnElement.parentElement;
+    const labelSpan = parentDiv.querySelector('span');
+    if (!labelSpan) return;
+
+    // Determina se é perspectiva ou objetivo pelo prefixo
+    const isPersp = chave.startsWith('persp_');
+    const id = isPersp ? chave.replace('persp_', '') : chave.replace('obj_', '');
+
+    // Substitui o conteúdo por um campo de edição
+    parentDiv.innerHTML = `
+        <div class="edit-nome-inline" style="display:flex; align-items:center; gap:8px; flex:1;">
+            ${isPersp ? '' : `<span style="font-weight:700; font-size:13px; flex-shrink:0;">${id} —</span>`}
+            <input type="text" id="edit-input-${chave}" value="${nomeAtual}" 
+                   class="input-edit-nome" 
+                   style="flex:1; padding:6px 10px; border:2px solid var(--azul-cfa); border-radius:8px; font-family:'Sora',sans-serif; font-size:${isPersp ? '14px' : '12px'}; font-weight:${isPersp ? '800' : '600'}; outline:none; transition: border-color 0.2s;"
+                   onkeydown="if(event.key==='Enter') window.salvarEdicaoNome('${chave}'); if(event.key==='Escape') window.cancelarEdicaoNome();">
+            <button class="btn btn-primary btn-sm" style="font-size:11px; padding:4px 10px;" onclick="window.salvarEdicaoNome('${chave}')">✓</button>
+            <button class="btn btn-sm" style="font-size:11px; padding:4px 10px; background:#f0f0f0; border:1px solid var(--cinza-borda); border-radius:6px; cursor:pointer;" onclick="window.cancelarEdicaoNome()">✕</button>
+        </div>
+    `;
+
+    // Foca no input
+    const input = document.getElementById(`edit-input-${chave}`);
+    if (input) {
+        input.focus();
+        input.select();
+    }
+};
+
+// Salvar a edição do nome
+window.salvarEdicaoNome = async function(chave) {
+    const input = document.getElementById(`edit-input-${chave}`);
+    if (!input) return;
+
+    const novoNome = input.value.trim();
+    if (!novoNome) {
+        window.showToast('⚠️ O nome não pode ficar vazio.');
+        return;
+    }
+
+    await window.salvarNomeCustom(chave, novoNome);
+};
+
+// Cancelar a edição e re-renderizar
+window.cancelarEdicaoNome = function() {
+    // Simplesmente re-renderiza a tela de objetivos
+    if (window.renderObjetivosEstrategicos) window.renderObjetivosEstrategicos();
+};
+
+// ==========================================
+// EDIÇÃO DE ITENS SWOT
+// ==========================================
+
+window.iniciarEdicaoSwot = function(tipoSwot, itemId) {
+    const textDiv = document.getElementById(`swot-text-${tipoSwot}-${itemId}`);
+    const editDiv = document.getElementById(`swot-edit-${tipoSwot}-${itemId}`);
+    
+    if (textDiv && editDiv) {
+        textDiv.style.display = 'none';
+        editDiv.style.display = 'flex';
+        
+        const input = document.getElementById(`swot-input-${tipoSwot}-${itemId}`);
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    }
+};
+
+window.cancelarEdicaoSwot = function(tipoSwot, itemId) {
+    const textDiv = document.getElementById(`swot-text-${tipoSwot}-${itemId}`);
+    const editDiv = document.getElementById(`swot-edit-${tipoSwot}-${itemId}`);
+    
+    if (textDiv && editDiv) {
+        textDiv.style.display = 'block';
+        editDiv.style.display = 'none';
+    }
+};
+
+window.salvarItemSwotInline = async function(tipoSwot, itemId) {
+    const input = document.getElementById(`swot-input-${tipoSwot}-${itemId}`);
+    if (!input) return;
+    
+    const novoTexto = input.value.trim();
+    if (!novoTexto) {
+        window.showToast('⚠️ O item não pode ficar vazio.');
+        return;
+    }
+    
+    await window.salvarItemSwot(tipoSwot, itemId, novoTexto);
+};
+
+window.removerItemSwot = async function(tipoSwot, itemId) {
+    if (confirm('Tem certeza que deseja remover este item?')) {
+        await window.deletarItemSwot(tipoSwot, itemId);
+    }
+};
+
+window.abrirModalSwot = function(tipoSwot = 'forcas') {
+    const overlay = document.getElementById('modal-swot-overlay');
+    const select = document.getElementById('swot-modal-tipo');
+    const textarea = document.getElementById('swot-modal-descricao');
+
+    if (!overlay || !select || !textarea) return;
+
+    select.value = tipoSwot;
+    textarea.value = '';
+    overlay.classList.add('open');
+
+    setTimeout(() => {
+        textarea.focus();
+    }, 50);
+};
+
+window.fecharModalSwot = function() {
+    const overlay = document.getElementById('modal-swot-overlay');
+    if (overlay) overlay.classList.remove('open');
+};
+
+window.salvarNovoItemSwot = async function() {
+    const select = document.getElementById('swot-modal-tipo');
+    const textarea = document.getElementById('swot-modal-descricao');
+
+    if (!select || !textarea) return;
+
+    const tipo = select.value;
+    const descricao = textarea.value.trim();
+
+    if (!descricao) {
+        window.showToast('⚠️ Escreva a descrição do novo item.');
+        return;
+    }
+
+    await window.adicionarItemSwot(tipo, descricao);
+    window.fecharModalSwot();
+};
 
 window.toggleAuthScreens = function () {
     const loginView = document.getElementById('form-login-view');
     const regView = document.getElementById('form-register-view');
+    const recoverView = document.getElementById('form-recover-view');
+    const resetView = document.getElementById('form-reset-password-view');
 
     if (loginView && regView) {
         if (loginView.style.display === 'none') {
             loginView.style.display = 'block';
             regView.style.display = 'none';
+            if (recoverView) recoverView.style.display = 'none';
+            if (resetView) resetView.style.display = 'none';
         } else {
             loginView.style.display = 'none';
             regView.style.display = 'block';
+            if (recoverView) recoverView.style.display = 'none';
+            if (resetView) resetView.style.display = 'none';
+        }
+    }
+};
+
+window.recuperarSenha = function () {
+    const loginView = document.getElementById('form-login-view');
+    const regView = document.getElementById('form-register-view');
+    const recoverView = document.getElementById('form-recover-view');
+    const resetView = document.getElementById('form-reset-password-view');
+
+    if (loginView) loginView.style.display = 'none';
+    if (regView) regView.style.display = 'none';
+    if (recoverView) recoverView.style.display = 'block';
+    if (resetView) resetView.style.display = 'none';
+};
+
+window.voltarParaLogin = function () {
+    const loginView = document.getElementById('form-login-view');
+    const regView = document.getElementById('form-register-view');
+    const recoverView = document.getElementById('form-recover-view');
+    const resetView = document.getElementById('form-reset-password-view');
+
+    // Se estiver redefinindo senha e voltar para o login, limpamos o token da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('token')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (loginView) loginView.style.display = 'block';
+    if (regView) regView.style.display = 'none';
+    if (recoverView) recoverView.style.display = 'none';
+    if (resetView) resetView.style.display = 'none';
+};
+
+window.enviarEmailRecuperacao = async function () {
+    const emailInput = document.getElementById('recover-email');
+    const email = emailInput ? emailInput.value.trim() : '';
+    const btn = document.getElementById('btn-recover');
+
+    if (!email) {
+        window.showToast('⚠️ Por favor, insira o e-mail.');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+    }
+
+    try {
+        const success = await api.solicitarResetSenha(email);
+        if (success) {
+            if (emailInput) emailInput.value = '';
+            window.voltarParaLogin();
+        }
+    } catch (err) {
+        window.showToast('❌ Erro inesperado ao solicitar recuperação.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Enviar Link';
+        }
+    }
+};
+
+window.redefinirNovaSenha = async function () {
+    const senha = document.getElementById('reset-senha').value;
+    const senhaConfirm = document.getElementById('reset-senha-confirm').value;
+    const btn = document.getElementById('btn-reset-password');
+
+    if (!senha || !senhaConfirm) {
+        window.showToast('⚠️ Por favor, preencha todos os campos.');
+        return;
+    }
+
+    if (senha !== senhaConfirm) {
+        window.showToast('⚠️ As senhas não são iguais.');
+        return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        window.showToast('❌ Token de redefinição não encontrado.');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Alterando...';
+    }
+
+    try {
+        const success = await api.redefinirSenha(token, senha);
+        if (success) {
+            document.getElementById('reset-senha').value = '';
+            document.getElementById('reset-senha-confirm').value = '';
+            window.voltarParaLogin();
+        }
+    } catch (err) {
+        window.showToast('❌ Erro ao redefinir a senha.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Salvar Nova Senha';
         }
     }
 };
@@ -95,19 +361,84 @@ window.toggleSetorCFA = function () {
         }
     }
 };
+window.toggleSetorIndicadores = function () {
+    const entidade = document.getElementById('filtro-entidade-indicadores').value;
+    const setorBox = document.getElementById('box-setor-indicadores');
+    if (setorBox) {
+        if (entidade === 'CFA') {
+            setorBox.style.display = 'flex';
+        } else {
+            setorBox.style.display = 'none';
+            document.getElementById('filtro-setor-indicadores').value = '';
+        }
+    }
+};
+window.toggleSetorAcoes = function () {
+    const entidade = document.getElementById('filtro-entidade-acoes').value;
+    const setorBox = document.getElementById('box-setor-acoes');
+    if (setorBox) {
+        if (entidade === 'CFA') {
+            setorBox.style.display = 'flex';
+        } else {
+            setorBox.style.display = 'none';
+            document.getElementById('filtro-setor-acoes').value = '';
+        }
+    }
+};
+window.abrirModalCraAdmin = function () {
+    const overlay = document.getElementById('modal-cra-admin-overlay');
+    if (overlay) {
+        overlay.classList.add('open');
+        setTimeout(() => document.getElementById('cra-admin-nome')?.focus(), 50);
+    }
+};
+
+window.fecharModalCraAdmin = function () {
+    const overlay = document.getElementById('modal-cra-admin-overlay');
+    if (overlay) overlay.classList.remove('open');
+};
+
+window.salvarCraAdmin = async function () {
+    const dados = {
+        nome: document.getElementById('cra-admin-nome').value.trim(),
+        email: document.getElementById('cra-admin-email').value.trim(),
+        senha: document.getElementById('cra-admin-senha').value,
+        entidade: document.getElementById('cra-admin-entidade').value
+    };
+
+    if (!dados.nome || !dados.email || !dados.senha || !dados.entidade) {
+        window.showToast('⚠️ Preencha todos os campos do administrador do CRA.');
+        return;
+    }
+
+    const ok = await api.criarCraAdmin(dados);
+    if (ok) {
+        window.fecharModalCraAdmin();
+        document.getElementById('cra-admin-nome').value = '';
+        document.getElementById('cra-admin-email').value = '';
+        document.getElementById('cra-admin-senha').value = '';
+        document.getElementById('cra-admin-entidade').value = '';
+    }
+};
+
 window.renderAdminUsers = async function () {
     const content = document.getElementById('admin-users-content');
     if (!content) return;
 
     content.innerHTML = '<p style="color:var(--texto-sec); font-size: 13px;">Buscando usuários...</p>';
     const usuarios = await api.carregarUsuariosFirebase();
+    const isGlobalAdmin = state.currentUser && state.currentUser.email === 'cgc@cfa.org.br';
+    const isCraAdmin = state.currentUser && state.currentUser.role === 'cra_admin';
+    const usuariosVisiveis = isCraAdmin
+        ? usuarios.filter(u => ['pendente', 'bloqueado'].includes(u.status))
+        : usuarios;
 
-    if (usuarios.length === 0) {
-        content.innerHTML = '<p style="color:var(--texto-sec); font-size: 13px;">Nenhum usuário cadastrado ainda.</p>';
+    if (usuariosVisiveis.length === 0) {
+        content.innerHTML = '<p style="color:var(--texto-sec); font-size: 13px;">Nenhum usuário pendente ou bloqueado para análise.</p>';
         return;
     }
 
-    usuarios.sort((a, b) => {
+    usuariosVisiveis.sort((a, b) => {
         if (a.status === 'pendente' && b.status !== 'pendente') return -1;
         if (a.status !== 'pendente' && b.status === 'pendente') return 1;
         return 0;
@@ -125,9 +456,11 @@ window.renderAdminUsers = async function () {
     </thead>
     <tbody>`;
 
-    usuarios.forEach(u => {
+    usuariosVisiveis.forEach(u => {
         const statusColor = u.status === 'aprovado' ? 'color:var(--verde);' : (u.status === 'pendente' ? 'color:#E65100; background:#FFF3E0; padding:2px 6px; border-radius:4px;' : 'color:var(--vermelho);');
         const dataFormatada = u.created_at ? window.formatDate(u.created_at.split('T')[0]) : '---';
+        const isTargetCraAdmin = u.role === 'cra_admin';
+        const canManage = isGlobalAdmin || (!isTargetCraAdmin && u.entidade === (state.currentUser && state.currentUser.cra_admin_scope));
 
         html += `<tr style="border-bottom: 1px solid var(--cinza-borda);">
       <td style="padding:12px 8px;">
@@ -135,19 +468,22 @@ window.renderAdminUsers = async function () {
         <span style="color:var(--texto-sec);">${window.escapeHTML(u.email)}</span>
       </td>
       <td style="padding:12px 8px;">
-        <strong>${window.escapeHTML(u.entidade)}</strong>
+        <strong>${window.escapeHTML(u.entidade || '-')}</strong>
         ${u.setor ? '<br><span style="color:var(--texto-sec);">' + window.escapeHTML(u.setor) + '</span>' : ''}
       </td>
       <td style="padding:12px 8px;">${dataFormatada}</td>
       <td style="padding:12px 8px; font-weight:800; text-transform:uppercase;"><span style="${statusColor}">${u.status}</span></td>
       <td style="padding:12px 8px;">
-        ${u.status !== 'aprovado' ? `<button class="btn btn-primary btn-sm" style="margin-right:4px;" onclick="window.atualizarStatusUsuario('${u.id}', 'aprovado')">Aprovar</button>` : ''}
-        ${u.status !== 'bloqueado' ? `<button class="btn btn-danger btn-sm" onclick="window.atualizarStatusUsuario('${u.id}', 'bloqueado')">Bloquear</button>` : ''}
+        ${canManage && u.status !== 'aprovado' ? `<button class="btn btn-primary btn-sm" style="margin-right:4px;" onclick="window.atualizarStatusUsuario('${u.id}', 'aprovado')">Aprovar</button>` : ''}
+        ${canManage && u.status !== 'bloqueado' ? `<button class="btn btn-danger btn-sm" onclick="window.atualizarStatusUsuario('${u.id}', 'bloqueado')">Bloquear</button>` : ''}
       </td>
     </tr>`;
     });
 
     html += `</tbody></table>`;
+    if (isGlobalAdmin) {
+        html += `<div style="margin-top:16px;"><button class="btn btn-primary btn-sm" onclick="window.abrirModalCraAdmin()">+ Criar administrador de CRA</button></div>`;
+    }
     content.innerHTML = html;
 };
 
@@ -201,7 +537,13 @@ window.addEventListener('auth-changed', async (e) => {
     if (user) {
         state.currentUser = user;
         document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('user-email-display').textContent = `${user.nome} (${user.grupo})`;
+
+        // Monta texto de exibição do usuário logado
+        let displayGrupo = user.grupo;
+        if (user.role === 'cra_admin' && user.cra_admin_scope) {
+            displayGrupo = `Administrador ${user.cra_admin_scope}`;
+        }
+        document.getElementById('user-email-display').textContent = `${user.nome} (${displayGrupo})`;
         
         window.showToast('✅ Acesso liberado!');
 
@@ -209,9 +551,29 @@ window.addEventListener('auth-changed', async (e) => {
         api.carregarAcoesFirebase(user.grupo);
         api.carregarTodasAcoesFirebase();
         api.carregarObjetivosFirebase();
+        api.carregarNomesCustom();
+        api.carregarItensSwot();
 
         const navAdmin = document.getElementById('nav-admin');
-        if (user.email === 'cgc@cfa.org.br') {
+        const navIndicadores = document.getElementById('nav-indicadores');
+        const adminFiltrosAcoes = document.getElementById('admin-filtros-acoes');
+        
+        const isMasterAdmin = user.email === 'cgc@cfa.org.br';
+        const isAdminRole = isMasterAdmin || user.role === 'cra_admin';
+        
+        if (navIndicadores) {
+            navIndicadores.style.display = isMasterAdmin ? 'flex' : 'none';
+        }
+
+        if (adminFiltrosAcoes) {
+            adminFiltrosAcoes.style.display = (isMasterAdmin || user.grupo === 'ADMIN') ? 'flex' : 'none';
+        }
+
+        const solicitacoesSection = document.getElementById('solicitacoes-admin-section');
+        if (solicitacoesSection) {
+            solicitacoesSection.style.display = user.role === 'cra_admin' ? 'none' : 'block';
+        }
+        if (isAdminRole) {
             if (navAdmin) navAdmin.style.display = 'flex';
             window.renderAdminUsers();
         } else {
@@ -234,15 +596,32 @@ document.addEventListener('DOMContentLoaded', () => {
     views.renderSWOT();
     document.getElementById('m-perspectiva').addEventListener('change', acoes.updateObjetivos);
 
-    // Verifica se já existe um token salvo para auto-login
-    const savedUser = localStorage.getItem('pes_user');
-    const savedToken = localStorage.getItem('pes_token');
-    
-    if (savedUser && savedToken) {
-        // Dispara o evento de autenticação se houver dados salvos
-        window.dispatchEvent(new CustomEvent('auth-changed', { detail: JSON.parse(savedUser) }));
-    } else {
+    // Verifica se há token de redefinição de senha na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+        // Limpa sessão anterior se houver, pois estamos em fluxo de redefinição
+        localStorage.removeItem('pes_user');
+        localStorage.removeItem('pes_token');
         window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
+
+        // Oculta tela de login e exibe a de redefinição
+        const loginView = document.getElementById('form-login-view');
+        const resetView = document.getElementById('form-reset-password-view');
+        if (loginView) loginView.style.display = 'none';
+        if (resetView) resetView.style.display = 'block';
+    } else {
+        // Verifica se já existe um token salvo para auto-login
+        const savedUser = localStorage.getItem('pes_user');
+        const savedToken = localStorage.getItem('pes_token');
+        
+        if (savedUser && savedToken) {
+            // Dispara o evento de autenticação se houver dados salvos
+            window.dispatchEvent(new CustomEvent('auth-changed', { detail: JSON.parse(savedUser) }));
+        } else {
+            window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
+        }
     }
 });
 console.log("FIM APP.JS");

@@ -9,7 +9,17 @@ export function renderObjetivosEstrategicos() {
     let html = '';
 
     Object.entries(PERSPECTIVAS).forEach(([key, p]) => {
-        html += `<div class="section-title" style="color:${p.cor};">${p.icon} ${p.nome}</div><div class="grid-2" style="margin-bottom: 24px;">`;
+        
+        if (isAdmin) {
+            html += `<div class="section-title" style="color:${p.cor}; display:flex; align-items:center; gap:8px;">
+                <span id="persp-label-${key}">${p.icon} ${p.nome}</span>
+                <button class="btn-edit-nome" title="Editar nome da perspectiva" onclick="window.iniciarEdicaoNome('persp_${key}', '${escapeHTML(p.nome)}', this)">✏️</button>
+            </div>`;
+        } else {
+            html += `<div class="section-title" style="color:${p.cor};">${p.icon} ${p.nome}</div>`;
+        }
+
+        html += `<div class="grid-2" style="margin-bottom: 24px;">`;
 
         p.objetivos.forEach(obj => {
             const data = state.objetivosGlobais[obj.id] || { indicador: '', meta: '', resultado: '' };
@@ -18,8 +28,17 @@ export function renderObjetivosEstrategicos() {
             let pct = metaVal > 0 ? Math.min(100, Math.round((resVal / metaVal) * 100)) : 0;
             const barColor = pct >= 80 ? '#1BA05B' : pct >= 50 ? '#E8A020' : '#C0392B';
 
-            html += `<div class="card" style="border-left: 4px solid ${p.cor}; padding:18px;">
-        <div style="font-size:13px; font-weight:700; margin-bottom:12px;">${obj.id} — ${obj.nome}</div>`;
+            html += `<div class="card" style="border-left: 4px solid ${p.cor}; padding:18px;">`;
+
+            // Nome do objetivo com botão de edição para admin
+            if (isAdmin) {
+                html += `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                    <span id="obj-label-${obj.id}">${obj.id} — ${obj.nome}</span>
+                    <button class="btn-edit-nome" title="Editar nome do objetivo" onclick="window.iniciarEdicaoNome('obj_${obj.id}', '${escapeHTML(obj.nome).replace(/'/g, "\\'")}', this)">✏️</button>
+                </div>`;
+            } else {
+                html += `<div style="font-size:13px; font-weight:700; margin-bottom:12px;">${obj.id} — ${obj.nome}</div>`;
+            }
 
             if (isAdmin) {
                 html += `
@@ -128,9 +147,55 @@ export function renderIndicadores() {
     const c = document.getElementById('indicadores-content');
     if (!c) return;
 
-    let html = '<div style="margin-bottom: 20px;"><p style="font-size:13px; color:var(--texto-sec);">Visão consolidada de todas as unidades do Sistema CFA/CRAs.</p></div>';
+    const filtroEntidadeEl = document.getElementById('filtro-entidade-indicadores');
+    const entidadeFiltro = filtroEntidadeEl ? filtroEntidadeEl.value : '';
+
+    const filtroSetorEl = document.getElementById('filtro-setor-indicadores');
+    const setorFiltro = (entidadeFiltro === 'CFA' && filtroSetorEl) ? filtroSetorEl.value : '';
+
+    let viewLabel = entidadeFiltro ? `Visão filtrada: ${entidadeFiltro}` : `Visão consolidada de todas as unidades do Sistema CFA/CRAs.`;
+    if (setorFiltro) {
+        viewLabel += ` - ${setorFiltro}`;
+    }
+
+    let html = `<div style="margin-bottom: 20px;"><p style="font-size:13px; color:var(--texto-sec);">${viewLabel}</p></div>`;
+
+    let todasAcoesGlobais = state.todasAcoes;
+    if (entidadeFiltro) {
+        todasAcoesGlobais = todasAcoesGlobais.filter(a => a.grupo === entidadeFiltro);
+        if (setorFiltro) {
+            todasAcoesGlobais = todasAcoesGlobais.filter(a => a.setor === setorFiltro);
+        }
+    }
+    
+    const totalProjetos = todasAcoesGlobais.length;
+    const objetivosUnicos = new Set(todasAcoesGlobais.map(a => a.objetivo).filter(o => o)).size;
+    const totalAcoesComIndicador = todasAcoesGlobais.filter(a => a.indicador && a.meta).length;
+
+    html += `
+    <div class="grid-3" style="margin-bottom: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <div class="card" style="text-align:center; padding: 20px; border-top: 4px solid var(--azul-cfa);">
+            <div style="font-size:32px; font-weight:900; color:var(--azul-cfa);">${totalProjetos}</div>
+            <div style="font-size:12px; font-weight:700; color:var(--texto-sec); text-transform:uppercase; margin-top:8px;">Total de Projetos/Atividades</div>
+        </div>
+        <div class="card" style="text-align:center; padding: 20px; border-top: 4px solid var(--azul-mid);">
+            <div style="font-size:32px; font-weight:900; color:var(--azul-mid);">${objetivosUnicos}</div>
+            <div style="font-size:12px; font-weight:700; color:var(--texto-sec); text-transform:uppercase; margin-top:8px;">Objetivos Estratégicos Trabalhados</div>
+        </div>
+        <div class="card" style="text-align:center; padding: 20px; border-top: 4px solid var(--verde);">
+            <div style="font-size:32px; font-weight:900; color:var(--verde);">${totalAcoesComIndicador}</div>
+            <div style="font-size:12px; font-weight:700; color:var(--texto-sec); text-transform:uppercase; margin-top:8px;">Indicadores com Metas</div>
+        </div>
+    </div>
+    `;
     html += Object.entries(PERSPECTIVAS).map(([key, p]) => {
-        const acoesPersp = state.todasAcoes.filter(a => a.perspectiva === key && a.indicador && a.meta);
+        let acoesPersp = state.todasAcoes.filter(a => a.perspectiva === key && a.indicador && a.meta);
+        if (entidadeFiltro) {
+            acoesPersp = acoesPersp.filter(a => a.grupo === entidadeFiltro);
+            if (setorFiltro) {
+                acoesPersp = acoesPersp.filter(a => a.setor === setorFiltro);
+            }
+        }
         const avgPersp = acoesPersp.length > 0 ? Math.round(acoesPersp.reduce((s, a) => s + (a.execucao || 0), 0) / acoesPersp.length) : 0;
 
         let perspCard = `<div class="section-title">${p.icon} ${p.nome}</div><div class="card" style="margin-bottom:20px;"><div style="display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--cinza-borda);margin-bottom:14px;"><div><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--texto-sec);">Execução Média (Geral)</div><div style="font-size:28px;font-family:'Playfair Display',serif;font-weight:900;color:${p.cor};">${avgPersp}%</div></div><div style="flex:1;"><div class="progress-track" style="height:12px;"><div class="progress-fill" style="width:${avgPersp}%;background:${p.cor};height:12px;"></div></div></div></div>`;
@@ -141,7 +206,17 @@ export function renderIndicadores() {
             const acoesObj = acoesPersp.filter(a => a.objetivo === obj.id);
             if (acoesObj.length > 0) {
                 const avgObj = Math.round(acoesObj.reduce((s, a) => s + (a.execucao || 0), 0) / acoesObj.length);
-                perspCard += `<div style="margin-top: 16px; background: var(--cinza-bg); border-radius: 8px; padding: 12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;"><div style="font-size:12px; font-weight:700; color:var(--azul-cfa);">${obj.id} - ${escapeHTML(obj.nome)}</div><div style="font-size:11px; font-weight:800; color:${p.cor};">Média Nacional: ${avgObj}%</div></div><div class="progress-track" style="height:6px; margin-bottom: 0;"><div class="progress-fill" style="width:${avgObj}%;background:${p.cor};"></div></div></div>`;
+                let projetosHTML = acoesObj.map(a => `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding: 8px 0; border-top: 1px solid rgba(0,0,0,0.05); margin-top: 8px;">
+                        <div style="flex:1;">
+                            <div style="font-size:11px; font-weight:700; color:var(--texto);">${escapeHTML(a.nome)} <span style="font-size:9px; color:var(--texto-sec); background:var(--cinza-borda); padding:2px 4px; border-radius:4px; margin-left:4px;">${escapeHTML(a.unidade)}</span></div>
+                            <div style="font-size:10px; color:var(--texto-sec); margin-top:2px;">Indicador: ${escapeHTML(a.indicador)} | Meta: ${a.meta} | Resultado: ${a.resultado}</div>
+                        </div>
+                        <div style="font-size:11px; font-weight:800; color:${p.cor};">${a.execucao || 0}%</div>
+                    </div>
+                `).join('');
+                
+                perspCard += `<div style="margin-top: 16px; background: var(--cinza-bg); border-radius: 8px; padding: 12px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;"><div style="font-size:12px; font-weight:700; color:var(--azul-cfa);">${obj.id} - ${escapeHTML(obj.nome)}</div><div style="font-size:11px; font-weight:800; color:${p.cor};">Média: ${avgObj}%</div></div><div class="progress-track" style="height:6px; margin-bottom: 0;"><div class="progress-fill" style="width:${avgObj}%;background:${p.cor};"></div></div>${projetosHTML}</div>`;
             }
         });
         return perspCard + `</div>`;
@@ -150,11 +225,63 @@ export function renderIndicadores() {
 }
 
 export function renderSWOT() {
-    const renderList = (id, items) => { const el = document.getElementById(id); if (el) el.innerHTML = items.map(i => `<li><span></span>${i}</li>`).join(''); };
-    renderList('swot-forcas', SWOT_DATA.forcas);
-    renderList('swot-fraquezas', SWOT_DATA.fraquezas);
-    renderList('swot-oport', SWOT_DATA.oportunidades);
-    renderList('swot-ameacas', SWOT_DATA.ameacas);
+    const isAdmin = (state.currentUser && state.currentUser.email === ADMIN_EMAIL);
+    
+    const renderList = (containerId, tipoSwot, items) => {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        
+        let html = '';
+        
+        // Usa itens customizados se existirem, senão usa os padrões
+        const itemsToRender = state.swotItems && state.swotItems[tipoSwot] && state.swotItems[tipoSwot].length > 0 
+            ? state.swotItems[tipoSwot] 
+            : items.map((desc, idx) => ({ id: null, descricao: desc, posicao: idx + 1 }));
+        
+        itemsToRender.forEach((item, idx) => {
+            const itemId = item.id != null && item.id !== '' ? String(item.id) : null;
+            const descricao = item.descricao || item;
+            
+            if (isAdmin && itemId) {
+                html += `<li style="display:flex; align-items:flex-start; gap:8px; margin-bottom:8px;">
+                    <span style="flex-shrink:0; margin-top:2px;"></span>
+                    <div style="flex:1;">
+                        <div id="swot-text-${tipoSwot}-${itemId}" style="word-break: break-word;">${escapeHTML(descricao)}</div>
+                        <div id="swot-edit-${tipoSwot}-${itemId}" style="display:none; gap:8px; align-items:flex-start; margin-top:6px;">
+                            <textarea id="swot-input-${tipoSwot}-${itemId}" style="flex:1; padding:8px; border:2px solid var(--azul-cfa); border-radius:6px; font-family:'Sora',sans-serif; font-size:13px; resize:vertical; min-height:60px;">${escapeHTML(descricao)}</textarea>
+                            <div style="display:flex; gap:6px; flex-shrink:0;">
+                                <button class="btn btn-primary btn-sm" style="font-size:11px; padding:6px 12px;" onclick="window.salvarItemSwotInline('${tipoSwot}', '${itemId}')">✓</button>
+                                <button class="btn btn-sm" style="font-size:11px; padding:6px 12px; background:#f0f0f0; border:1px solid var(--cinza-borda); border-radius:6px; cursor:pointer;" onclick="window.cancelarEdicaoSwot('${tipoSwot}', '${itemId}')">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-edit-nome" title="Editar item" onclick="window.iniciarEdicaoSwot('${tipoSwot}', '${itemId}')" style="flex-shrink:0; margin-top:0;">✏️</button>
+                    <button class="btn-edit-nome" title="Remover item" onclick="window.removerItemSwot('${tipoSwot}', '${itemId}')" style="flex-shrink:0; margin-top:0; color:#c0392b;">🗑️</button>
+                </li>`;
+            } else if (isAdmin) {
+                html += `<li style="display:flex; align-items:flex-start; gap:8px; margin-bottom:8px;">
+                    <span style="flex-shrink:0; margin-top:2px;"></span>
+                    <div style="flex:1; color:var(--texto-sec); font-size:12px;">${escapeHTML(descricao)}</div>
+                </li>`;
+            } else {
+                html += `<li><span></span>${escapeHTML(descricao)}</li>`;
+            }
+        });
+        
+        // Adiciona botão para novo item se for admin
+        if (isAdmin) {
+            html += `<li style="margin-top:12px; padding-top:12px; border-top:1px solid var(--cinza-borda);">
+                <button class="btn btn-sm btn-primary" style="width:100%;" onclick="window.abrirModalSwot('${tipoSwot}')">+ Adicionar item</button>
+            </li>`;
+        }
+        
+        el.innerHTML = html;
+    };
+    
+    renderList('swot-forcas', 'forcas', SWOT_DATA.forcas);
+    renderList('swot-fraquezas', 'fraquezas', SWOT_DATA.fraquezas);
+    renderList('swot-oport', 'oportunidades', SWOT_DATA.oportunidades);
+    renderList('swot-ameacas', 'ameacas', SWOT_DATA.ameacas);
 }
 
 export function renderRelatorio() {

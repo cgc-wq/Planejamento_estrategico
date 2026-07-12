@@ -74,6 +74,7 @@ export const state = {
     acoes: [],
     todasAcoes: [],
     objetivosGlobais: {},
+    swotItems: { forcas: [], fraquezas: [], oportunidades: [], ameacas: [] },
     editingId: null,
     uploadProjId: null,
     uploadAcaoIndex: null,
