@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // Serving uploads directory
-app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Rotas da API
 app.use('/api/auth', authRoutes);
