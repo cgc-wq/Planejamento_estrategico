@@ -6,6 +6,8 @@ export function renderObjetivosEstrategicos() {
     if (!c) return;
 
     const isAdmin = (state.currentUser && state.currentUser.email === ADMIN_EMAIL);
+    // Admin Master só visualiza; o preenchimento do resultado é exclusivo dos usuários/admins de CRA
+    const podePreencherResultado = (state.currentUser && state.currentUser.email !== ADMIN_EMAIL);
     let html = '';
 
     Object.entries(PERSPECTIVAS).forEach(([key, p]) => {
@@ -57,6 +59,30 @@ export function renderObjetivosEstrategicos() {
             } else {
                 html += `<div style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-bottom:12px; color:var(--texto-sec);"><div><strong>Indicador:</strong> <span style="color:var(--texto);">${indicadorSafe || 'Aguardando definição'}</span></div><div><strong>Meta:</strong> <span style="color:var(--texto);">${data.meta || '0'}</span> | <strong>Atual:</strong> <span style="color:var(--texto);">${data.resultado || '0'}</span></div></div><div style="display:flex; align-items:center; gap:10px;"><div style="flex:1;"><div class="progress-track" style="height:8px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div></div><div style="font-weight:800; font-size:14px; color:${barColor};">${pct}%</div></div>`;
             }
+
+            // Resultados enviados pelos CRAs (com evidência)
+            const listaResultados = state.resultadosObjetivo[obj.id] || [];
+            html += `<div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--cinza-borda);">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
+                    <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--texto-sec);">Resultados enviados pelos CRAs</span>
+                    ${podePreencherResultado ? `<button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirModalResultado('${obj.id}', event)">➕ Adicionar Resultado</button>` : ''}
+                </div>`;
+
+            if (listaResultados.length === 0) {
+                html += `<div style="font-size:12px; color:var(--texto-sec);">Nenhum resultado enviado ainda.</div>`;
+            } else {
+                html += `<div class="resultados-cra-scroll">`;
+                listaResultados.forEach(r => {
+                    const dataEnvio = r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : '';
+                    html += `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; background:#F7F7FA; border-radius:8px; padding:6px 10px;">
+                        <div><strong>${escapeHTML(r.entidade || '')}</strong> — Resultado: ${escapeHTML(String(parseFloat(r.resultado)))}% <span style="color:var(--texto-sec);">(${escapeHTML(r.autor_nome || '')}, ${dataEnvio})</span></div>
+                        <a href="${escapeHTML(r.evidencia_url)}" target="_blank" rel="noopener" style="font-weight:700; white-space:nowrap;">📎 Evidência</a>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
+
             html += `</div>`;
         });
         html += `</div>`;
@@ -147,6 +173,8 @@ export function renderIndicadores() {
     const c = document.getElementById('indicadores-content');
     if (!c) return;
 
+    const isAdmin = (state.currentUser && state.currentUser.email === ADMIN_EMAIL);
+
     const filtroEntidadeEl = document.getElementById('filtro-entidade-indicadores');
     const entidadeFiltro = filtroEntidadeEl ? filtroEntidadeEl.value : '';
 
@@ -188,6 +216,82 @@ export function renderIndicadores() {
         </div>
     </div>
     `;
+    // ================= Resultados dos Objetivos enviados pelos CRAs =================
+    // Usa o mesmo dropdown de entidade já existente na página (não há filtro de
+    // setor aqui, pois objetivo_resultados não guarda câmara/setor do CFA).
+    const objetivosComResultado = [];
+    const resultadosDetalhados = [];
+    Object.entries(PERSPECTIVAS).forEach(([perspKey, p]) => {
+        p.objetivos.forEach(obj => {
+            let lista = state.resultadosObjetivo[obj.id] || [];
+            if (entidadeFiltro) lista = lista.filter(r => r.entidade === entidadeFiltro);
+            if (lista.length === 0) return;
+
+            const media = lista.reduce((s, r) => s + (parseFloat(r.resultado) || 0), 0) / lista.length;
+            objetivosComResultado.push({ id: obj.id, nome: obj.nome, media: Math.round(media * 10) / 10 });
+
+            lista.forEach(r => resultadosDetalhados.push({ ...r, objetivoId: obj.id, objetivoNome: obj.nome }));
+        });
+    });
+    resultadosDetalhados.sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+
+    html += `<div class="section-title">📊 Desempenho dos Objetivos — Resultados enviados pelos CRAs</div>`;
+    html += `<div class="card" style="margin-bottom:20px; padding:20px;">`;
+    if (objetivosComResultado.length === 0) {
+        html += `<div style="font-size:13px; color:var(--texto-sec);">Nenhum resultado enviado pelos CRAs ainda${entidadeFiltro ? ' para esta unidade' : ''}.</div>`;
+    } else {
+        html += `<div style="position:relative; height:${Math.max(220, objetivosComResultado.length * 34)}px;"><canvas id="chartIndicadoresResultados"></canvas></div>`;
+    }
+    html += `</div>`;
+
+    html += `<div class="section-title">📋 Resultados Detalhados por CRA/Câmara</div>`;
+    html += `<div class="card" style="padding:0; overflow:hidden; margin-bottom:24px;">`;
+    if (resultadosDetalhados.length === 0) {
+        html += `<div style="padding:20px; font-size:13px; color:var(--texto-sec);">Nenhum resultado lançado${entidadeFiltro ? ' para esta unidade' : ''}.</div>`;
+    } else {
+        html += `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <thead>
+                <tr style="background:var(--cinza-bg); text-align:left;">
+                    <th style="padding:10px 14px; white-space:nowrap;">Objetivo</th>
+                    <th style="padding:10px 14px; white-space:nowrap;">CRA/Câmara</th>
+                    <th style="padding:10px 14px; white-space:nowrap;">Valor Atingido</th>
+                    <th style="padding:10px 14px; white-space:nowrap;">Data</th>
+                    ${isAdmin ? `<th style="padding:10px 14px; white-space:nowrap;">Observação</th>` : ''}
+                    <th style="padding:10px 14px; white-space:nowrap;">Evidência</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        resultadosDetalhados.forEach(r => {
+            const dataEnvio = r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : '';
+
+            // Observação lançada pelo próprio CRA ao enviar o resultado — somente
+            // leitura aqui, visível apenas para o Admin Master.
+            let colunaObs = '';
+            if (isAdmin) {
+                const obsRaw = (r.observacao || '').trim();
+                if (!obsRaw) {
+                    colunaObs = `<td style="padding:10px 14px; color:var(--texto-sec);">Sem observações</td>`;
+                } else {
+                    const obsResumo = obsRaw.length > 40 ? obsRaw.slice(0, 40) + '...' : obsRaw;
+                    colunaObs = `<td style="padding:10px 14px; max-width:220px;">
+                        <span class="obs-truncate" title="${escapeHTML(obsRaw)}">${escapeHTML(obsResumo)}</span>
+                    </td>`;
+                }
+            }
+
+            html += `<tr style="border-top:1px solid var(--cinza-borda);">
+                <td style="padding:10px 14px;">${escapeHTML(r.objetivoId)} — ${escapeHTML(r.objetivoNome)}</td>
+                <td style="padding:10px 14px;">${escapeHTML(r.entidade || '')}</td>
+                <td style="padding:10px 14px; font-weight:700;">${escapeHTML(String(parseFloat(r.resultado)))}%</td>
+                <td style="padding:10px 14px; color:var(--texto-sec); white-space:nowrap;">${dataEnvio}</td>
+                ${colunaObs}
+                <td style="padding:10px 14px;"><a href="${escapeHTML(r.evidencia_url)}" target="_blank" rel="noopener" style="font-weight:700; white-space:nowrap;">📎 Ver evidência</a></td>
+            </tr>`;
+        });
+        html += `</tbody></table></div>`;
+    }
+    html += `</div>`;
+
     html += Object.entries(PERSPECTIVAS).map(([key, p]) => {
         let acoesPersp = state.todasAcoes.filter(a => a.perspectiva === key && a.indicador && a.meta);
         if (entidadeFiltro) {
@@ -222,6 +326,47 @@ export function renderIndicadores() {
         return perspCard + `</div>`;
     }).join('');
     c.innerHTML = html;
+
+    // Gráfico de barras horizontais com o resultado médio por objetivo (Chart.js
+    // é carregado globalmente via CDN no index.html — sem import necessário)
+    if (objetivosComResultado.length > 0 && window.Chart) {
+        const ctx = document.getElementById('chartIndicadoresResultados');
+        if (ctx) {
+            const labels = objetivosComResultado.map(o => o.id);
+            const dataPct = objetivosComResultado.map(o => o.media);
+            const colors = dataPct.map(pct => pct >= 80 ? '#1BA05B' : pct >= 50 ? '#E8A020' : '#C0392B');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{ label: 'Resultado médio (%)', data: dataPct, backgroundColor: colors, borderRadius: 4 }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctxT) => ` Resultado médio: ${ctxT.raw}%`,
+                                title: (items) => {
+                                    const objId = items[0].label;
+                                    const found = objetivosComResultado.find(o => o.id === objId);
+                                    return found ? `${objId} — ${found.nome}` : objId;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { min: 0, max: 100, ticks: { font: { family: 'DM Mono', size: 9 }, stepSize: 20 } },
+                        y: { ticks: { font: { family: 'Sora', size: 10, weight: 'bold' } } }
+                    }
+                }
+            });
+        }
+    }
 }
 
 export function renderSWOT() {

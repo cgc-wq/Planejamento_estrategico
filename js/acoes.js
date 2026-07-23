@@ -474,7 +474,7 @@ export function renderAcoes() {
       <div class="project-header" onclick="window.toggleCard('${a.id}', event)">
         <div class="ph-main">
           <span class="ph-badge" style="background:${tipoCor}">${tipoLabel}</span>
-          <div class="ph-title">${safeNome} ${a.tem_pendencia ? '<span title="Alteração pendente de aprovação" style="color:var(--amarelo); margin-left:5px; font-size:14px;">⏳</span>' : ''}</div>
+          <div class="ph-title">${safeNome} ${a.tem_pendencia ? '<span title="Alteração pendente de aprovação do Admin Master" style="color:var(--amarelo); margin-left:5px; font-size:14px;">⏳</span>' : ''}</div>
           <div class="ph-sub">
             <span style="color:${PERSP_CORES[a.perspectiva]}; font-weight:700;">${PERSP_ABREV[a.perspectiva]}</span>
             <span>• ${a.objetivo}</span>
@@ -574,7 +574,9 @@ export function updateIndicadorInteligente(id) {
     if (t === 'qualitativo') a.progresso_quali = parseInt(val) || 0;
 
     recalcularExecucao(a);
-    window.atualizarInlineFirestore(a);
+    // "Resultado Alcançado" altera o indicador principal do projeto — ao
+    // contrário da execução/entregas, precisa da aprovação do Admin Master.
+    window.solicitarAlteracaoResultado(a);
 }
 
 export function updateStatusOnly(id) {

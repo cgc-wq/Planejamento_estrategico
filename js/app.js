@@ -27,8 +27,12 @@ window.carregarAcoesFirebase = api.carregarAcoesFirebase;
 window.carregarTodasAcoesFirebase = api.carregarTodasAcoesFirebase;
 window.carregarObjetivosFirebase = api.carregarObjetivosFirebase;
 window.salvarObjetivoEstrategico = api.salvarObjetivoEstrategico;
+window.carregarResultadosObjetivo = api.carregarResultadosObjetivo;
+window.handleResultadoEvidenciaUpload = api.handleResultadoEvidenciaUpload;
+window.salvarResultadoObjetivo = api.salvarResultadoObjetivo;
 window.salvarNoFirestore = api.salvarNoFirestore;
 window.atualizarInlineFirestore = api.atualizarInlineFirestore;
+window.solicitarAlteracaoResultado = api.solicitarAlteracaoResultado;
 window.excluirNoFirestore = api.excluirNoFirestore;
 window.carregarSolicitacoesAdmin = api.carregarSolicitacoesAdmin;
 window.aprovarSolicitacao = api.aprovarSolicitacao;
@@ -203,6 +207,41 @@ window.fecharModalSwot = function() {
     if (overlay) overlay.classList.remove('open');
 };
 
+window.abrirModalResultado = function(objId, event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+
+    const overlay = document.getElementById('modal-resultado-overlay');
+    const valor = document.getElementById('resultado-modal-valor');
+    const observacao = document.getElementById('resultado-modal-observacao');
+    const preview = document.getElementById('resultado-anexo-preview');
+    const uploadArea = document.getElementById('resultado-anexo-upload-area');
+    const status = document.getElementById('resultado-anexo-status');
+    const titulo = document.getElementById('resultado-modal-titulo');
+
+    if (!overlay) return;
+
+    state.resultadoModalObjId = objId;
+    state.resultadoModalArquivo = null;
+
+    if (titulo) titulo.textContent = `Adicionar resultado — ${objId}`;
+    if (valor) valor.value = '';
+    if (observacao) observacao.value = '';
+    if (preview) preview.style.display = 'none';
+    if (uploadArea) uploadArea.style.display = 'flex';
+    if (status) status.textContent = 'Nenhum arquivo selecionado';
+
+    overlay.classList.add('open');
+};
+
+window.fecharModalResultado = function(event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+
+    const overlay = document.getElementById('modal-resultado-overlay');
+    if (overlay) overlay.classList.remove('open');
+    state.resultadoModalObjId = null;
+    state.resultadoModalArquivo = null;
+};
+
 window.salvarNovoItemSwot = async function() {
     const select = document.getElementById('swot-modal-tipo');
     const textarea = document.getElementById('swot-modal-descricao');
@@ -224,129 +263,18 @@ window.salvarNovoItemSwot = async function() {
 window.toggleAuthScreens = function () {
     const loginView = document.getElementById('form-login-view');
     const regView = document.getElementById('form-register-view');
-    const recoverView = document.getElementById('form-recover-view');
-    const resetView = document.getElementById('form-reset-password-view');
 
     if (loginView && regView) {
         if (loginView.style.display === 'none') {
             loginView.style.display = 'block';
             regView.style.display = 'none';
-            if (recoverView) recoverView.style.display = 'none';
-            if (resetView) resetView.style.display = 'none';
         } else {
             loginView.style.display = 'none';
             regView.style.display = 'block';
-            if (recoverView) recoverView.style.display = 'none';
-            if (resetView) resetView.style.display = 'none';
         }
     }
 };
 
-window.recuperarSenha = function () {
-    const loginView = document.getElementById('form-login-view');
-    const regView = document.getElementById('form-register-view');
-    const recoverView = document.getElementById('form-recover-view');
-    const resetView = document.getElementById('form-reset-password-view');
-
-    if (loginView) loginView.style.display = 'none';
-    if (regView) regView.style.display = 'none';
-    if (recoverView) recoverView.style.display = 'block';
-    if (resetView) resetView.style.display = 'none';
-};
-
-window.voltarParaLogin = function () {
-    const loginView = document.getElementById('form-login-view');
-    const regView = document.getElementById('form-register-view');
-    const recoverView = document.getElementById('form-recover-view');
-    const resetView = document.getElementById('form-reset-password-view');
-
-    // Se estiver redefinindo senha e voltar para o login, limpamos o token da URL
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('token')) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    if (loginView) loginView.style.display = 'block';
-    if (regView) regView.style.display = 'none';
-    if (recoverView) recoverView.style.display = 'none';
-    if (resetView) resetView.style.display = 'none';
-};
-
-window.enviarEmailRecuperacao = async function () {
-    const emailInput = document.getElementById('recover-email');
-    const email = emailInput ? emailInput.value.trim() : '';
-    const btn = document.getElementById('btn-recover');
-
-    if (!email) {
-        window.showToast('⚠️ Por favor, insira o e-mail.');
-        return;
-    }
-
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Enviando...';
-    }
-
-    try {
-        const success = await api.solicitarResetSenha(email);
-        if (success) {
-            if (emailInput) emailInput.value = '';
-            window.voltarParaLogin();
-        }
-    } catch (err) {
-        window.showToast('❌ Erro inesperado ao solicitar recuperação.');
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'Enviar Link';
-        }
-    }
-};
-
-window.redefinirNovaSenha = async function () {
-    const senha = document.getElementById('reset-senha').value;
-    const senhaConfirm = document.getElementById('reset-senha-confirm').value;
-    const btn = document.getElementById('btn-reset-password');
-
-    if (!senha || !senhaConfirm) {
-        window.showToast('⚠️ Por favor, preencha todos os campos.');
-        return;
-    }
-
-    if (senha !== senhaConfirm) {
-        window.showToast('⚠️ As senhas não são iguais.');
-        return;
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-
-    if (!token) {
-        window.showToast('❌ Token de redefinição não encontrado.');
-        return;
-    }
-
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = 'Alterando...';
-    }
-
-    try {
-        const success = await api.redefinirSenha(token, senha);
-        if (success) {
-            document.getElementById('reset-senha').value = '';
-            document.getElementById('reset-senha-confirm').value = '';
-            window.voltarParaLogin();
-        }
-    } catch (err) {
-        window.showToast('❌ Erro ao redefinir a senha.');
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = 'Salvar Nova Senha';
-        }
-    }
-};
 window.carregarUsuariosFirebase = api.carregarUsuariosFirebase;
 window.atualizarStatusUsuario = api.atualizarStatusUsuario;
 window.toggleSetorCFA = function () {
@@ -551,6 +479,7 @@ window.addEventListener('auth-changed', async (e) => {
         api.carregarAcoesFirebase(user.grupo);
         api.carregarTodasAcoesFirebase();
         api.carregarObjetivosFirebase();
+        api.carregarResultadosObjetivo();
         api.carregarNomesCustom();
         api.carregarItensSwot();
 
@@ -596,32 +525,15 @@ document.addEventListener('DOMContentLoaded', () => {
     views.renderSWOT();
     document.getElementById('m-perspectiva').addEventListener('change', acoes.updateObjetivos);
 
-    // Verifica se há token de redefinição de senha na URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    // Verifica se já existe um token salvo para auto-login
+    const savedUser = localStorage.getItem('pes_user');
+    const savedToken = localStorage.getItem('pes_token');
 
-    if (token) {
-        // Limpa sessão anterior se houver, pois estamos em fluxo de redefinição
-        localStorage.removeItem('pes_user');
-        localStorage.removeItem('pes_token');
-        window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
-
-        // Oculta tela de login e exibe a de redefinição
-        const loginView = document.getElementById('form-login-view');
-        const resetView = document.getElementById('form-reset-password-view');
-        if (loginView) loginView.style.display = 'none';
-        if (resetView) resetView.style.display = 'block';
+    if (savedUser && savedToken) {
+        // Dispara o evento de autenticação se houver dados salvos
+        window.dispatchEvent(new CustomEvent('auth-changed', { detail: JSON.parse(savedUser) }));
     } else {
-        // Verifica se já existe um token salvo para auto-login
-        const savedUser = localStorage.getItem('pes_user');
-        const savedToken = localStorage.getItem('pes_token');
-        
-        if (savedUser && savedToken) {
-            // Dispara o evento de autenticação se houver dados salvos
-            window.dispatchEvent(new CustomEvent('auth-changed', { detail: JSON.parse(savedUser) }));
-        } else {
-            window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
-        }
+        window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
     }
 });
 console.log("FIM APP.JS");

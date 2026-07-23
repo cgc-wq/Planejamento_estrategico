@@ -2,7 +2,7 @@
 import { state, PERSPECTIVAS } from './data.js';
 import { showToast } from './utils.js';
 
-const API_URL = 'http://localhost:8081/api';
+const API_URL = 'http://localhost:3000/api';
 
 // Auxiliar para pegar o token
 const getAuthHeaders = () => {
@@ -175,6 +175,153 @@ export async function salvarObjetivoEstrategico(id) {
     }
 }
 
+// =============================================
+// RESULTADOS DE OBJETIVO POR CRA (com evidência)
+// =============================================
+
+export async function carregarResultadosObjetivo() {
+    try {
+        const res = await fetch(`${API_URL}/objetivos/resultados`, {
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) return;
+        state.resultadosObjetivo = await res.json();
+        const pageObj = document.getElementById('page-objetivos');
+        if (pageObj && pageObj.classList.contains('active')) {
+            if (window.renderObjetivosEstrategicos) window.renderObjetivosEstrategicos();
+        }
+        const pageIndicadores = document.getElementById('page-indicadores');
+        if (pageIndicadores && pageIndicadores.classList.contains('active')) {
+            if (window.renderIndicadores) window.renderIndicadores();
+        }
+    } catch (e) {
+        console.error('[Resultados] Erro ao carregar:', e);
+    }
+}
+
+// Seleção do arquivo: NÃO envia nada ao servidor ainda — apenas guarda o File
+// em memória e mostra uma pré-visualização local. O upload de fato só acontece
+// dentro de salvarResultadoObjetivo(), encadeado com a gravação do resultado.
+export function handleResultadoEvidenciaUpload(event) {
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+
+    const file = event.target.files[0];
+    if (!file) return;
+
+    state.resultadoModalArquivo = file;
+    console.log('[Resultado Objetivo] Arquivo selecionado:', file.name, file.size, file.type);
+
+    const nomeEl = document.getElementById('resultado-anexo-nome');
+    const linkEl = document.getElementById('resultado-anexo-link');
+    const previewEl = document.getElementById('resultado-anexo-preview');
+    const uploadAreaEl = document.getElementById('resultado-anexo-upload-area');
+
+    if (nomeEl) nomeEl.textContent = file.name;
+    if (linkEl) linkEl.href = URL.createObjectURL(file); // apenas preview local, ainda sem URL no servidor
+    if (previewEl) previewEl.style.display = 'flex';
+    if (uploadAreaEl) uploadAreaEl.style.display = 'none';
+}
+
+// Submit único e atômico: só dispara a gravação do resultado DEPOIS de ter,
+// em mãos, a URL definitiva da evidência retornada pelo upload.
+export async function salvarResultadoObjetivo(event) {
+    // Impede que o clique no botão dispare um submit/reload nativo do navegador
+    if (event) { event.preventDefault(); event.stopPropagation(); }
+
+    // Tudo dentro de um único try/catch — nenhuma exceção (incluindo elemento
+    // não encontrado no DOM) deve escapar sem log e sem feedback ao usuário
+    let btn = null;
+    try {
+        const objId = state.resultadoModalObjId;
+        if (!objId) {
+            console.error('[Resultado Objetivo] Submit abortado: nenhum objetivo associado ao modal.');
+            showToast('❌ Não foi possível identificar o objetivo. Feche e abra o modal novamente.');
+            return;
+        }
+
+        const resultadoInput = document.getElementById('resultado-modal-valor');
+        const observacaoInput = document.getElementById('resultado-modal-observacao');
+        if (!resultadoInput || !observacaoInput) {
+            console.error('[Resultado Objetivo] Campos do modal não encontrados no DOM.');
+            showToast('❌ Erro interno: campos do formulário não encontrados.');
+            return;
+        }
+
+        const resultado = parseFloat(resultadoInput.value);
+        const arquivo = state.resultadoModalArquivo;
+
+        if (isNaN(resultado) || resultado < 0 || resultado > 100) {
+            showToast('⚠️ Informe um percentual de resultado válido (0 a 100).');
+            return;
+        }
+        if (!arquivo) {
+            showToast('⚠️ Anexe uma evidência antes de salvar.');
+            return;
+        }
+
+        btn = document.getElementById('btn-salvar-resultado');
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+
+        // 1) Upload da evidência — o restante do fluxo só continua após a resposta
+        console.log('[Resultado Objetivo] Enviando evidência...', arquivo.name);
+        const formData = new FormData();
+        formData.append('file', arquivo);
+
+        const uploadRes = await fetch(`${API_URL}/upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('pes_token')}` },
+            body: formData
+        });
+        const uploadContentType = uploadRes.headers.get('content-type') || '';
+        const uploadData = uploadContentType.includes('application/json') ? await uploadRes.json() : null;
+
+        if (!uploadRes.ok) {
+            throw new Error((uploadData && uploadData.message) || `Falha no upload da evidência (HTTP ${uploadRes.status})`);
+        }
+        console.log('[Resultado Objetivo] Upload concluído:', uploadData);
+
+        // 2) Só agora grava o resultado, já com a evidencia_url confirmada pelo servidor
+        const payload = {
+            resultado,
+            observacao: observacaoInput.value.trim(),
+            evidencia_url: uploadData.url,
+            evidencia_nome: uploadData.name
+        };
+        console.log('[Resultado Objetivo] Gravando resultado com payload:', payload);
+
+        const salvarRes = await fetch(`${API_URL}/objetivos/${objId}/resultados`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload)
+        });
+        const salvarContentType = salvarRes.headers.get('content-type') || '';
+        const salvarData = salvarContentType.includes('application/json') ? await salvarRes.json() : null;
+
+        if (!salvarRes.ok) {
+            // Resposta sem JSON geralmente indica rota inexistente (backend desatualizado)
+            throw new Error((salvarData && salvarData.message) || `Não foi possível salvar o resultado (HTTP ${salvarRes.status}). Verifique se o servidor backend foi reiniciado com a versão mais recente.`);
+        }
+        console.log('[Resultado Objetivo] Resultado gravado com sucesso:', salvarData);
+
+        // 3) Atualização de estado local imediata — a tela reflete o novo resultado
+        // sem depender de reload nem de uma segunda ida síncrona ao servidor.
+        if (!state.resultadosObjetivo[objId]) state.resultadosObjetivo[objId] = [];
+        state.resultadosObjetivo[objId].unshift(salvarData);
+        if (window.renderObjetivosEstrategicos) window.renderObjetivosEstrategicos();
+
+        showToast('✅ Resultado enviado com sucesso!');
+        if (window.fecharModalResultado) window.fecharModalResultado();
+
+        // Ressincroniza em segundo plano para manter consistência com o backend
+        carregarResultadosObjetivo();
+    } catch (e) {
+        console.error('[Resultado Objetivo] Erro ao salvar resultado/evidência:', e);
+        showToast('❌ ' + e.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Salvar Resultado'; }
+    }
+}
+
 export async function salvarNoFirestore(acaoData, idEditando) {
     const btn = document.getElementById('btn-salvar-modal');
     btn.disabled = true;
@@ -193,12 +340,15 @@ export async function salvarNoFirestore(acaoData, idEditando) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Erro ao salvar');
 
+        // Criação é sempre direta. Edição de campos gerais do projeto (este
+        // formulário completo) continua exigindo aprovação do Admin Master
+        // para quem não é admin — por isso o 202 ainda é tratado aqui.
         if (res.status === 202) {
             showToast('⏳ Solicitação enviada! Aguarde a aprovação do Administrador.');
         } else {
             showToast('✅ Salvo com sucesso!');
         }
-        
+
         carregarAcoesFirebase(state.currentUser.grupo);
         carregarTodasAcoesFirebase();
         if (window.closeModal) window.closeModal();
@@ -210,25 +360,53 @@ export async function salvarNoFirestore(acaoData, idEditando) {
     }
 }
 
+// Envio de execução do projeto (status, ações de execução) e entregas
+// periódicas das atividades — aplicado direto, sem depender de aprovação do
+// Admin Master (diferente da edição via modal e do "Resultado Alcançado" do
+// indicador principal, que continuam exigindo aprovação — ver
+// solicitarAlteracaoResultado abaixo).
 export async function atualizarInlineFirestore(acaoData) {
     try {
-        const res = await fetch(`${API_URL}/projetos/${acaoData.id}`, {
+        const res = await fetch(`${API_URL}/projetos/${acaoData.id}/execucao`, {
             method: 'PUT',
             headers: getAuthHeaders(),
             body: JSON.stringify(acaoData)
         });
         if (!res.ok) throw new Error();
 
-        if (res.status === 202) {
-            showToast('⏳ Alteração enviada para aprovação.');
-        } else {
-            showToast('✅ Atualizado.');
-        }
+        showToast('✅ Atualizado.');
 
         carregarAcoesFirebase(state.currentUser.grupo);
         carregarTodasAcoesFirebase();
     } catch (e) {
         showToast('❌ Erro ao atualizar');
+    }
+}
+
+// Alteração do "Resultado Alcançado" (indicador principal do projeto): ao
+// contrário da execução/entregas, essa mudança continua exigindo aprovação
+// do Admin Master — usa o mesmo endpoint gated de atualizarProjeto (PUT
+// /projetos/:id), que retorna 202 (pendente) para quem não é admin.
+export async function solicitarAlteracaoResultado(acaoData) {
+    try {
+        const res = await fetch(`${API_URL}/projetos/${acaoData.id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(acaoData)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao salvar resultado');
+
+        if (res.status === 202) {
+            showToast('⏳ Resultado enviado! Aguarde a aprovação do Admin Master.');
+        } else {
+            showToast('✅ Resultado atualizado.');
+        }
+
+        carregarAcoesFirebase(state.currentUser.grupo);
+        carregarTodasAcoesFirebase();
+    } catch (e) {
+        showToast('❌ Erro ao atualizar resultado: ' + e.message);
     }
 }
 
@@ -468,41 +646,6 @@ export async function rejeitarSolicitacao(id) {
     }
 }
 
-export async function solicitarResetSenha(email) {
-    try {
-        const res = await fetch(`${API_URL}/auth/forgot-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Erro ao solicitar redefinição');
-
-        showToast('✅ Verifique seu e-mail para redefinir a senha.');
-        return true;
-    } catch (error) {
-        showToast(`❌ ${error.message}`);
-        return false;
-    }
-}
-
-export async function redefinirSenha(token, novaSenha) {
-    try {
-        const res = await fetch(`${API_URL}/auth/reset-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, senha: novaSenha })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Erro ao redefinir senha');
-
-        showToast('✅ Senha redefinida com sucesso!');
-        return true;
-    } catch (error) {
-        showToast(`❌ ${error.message}`);
-        return false;
-    }
-}
 
 // =============================================
 // NOMES CUSTOMIZADOS (Perspectivas e Objetivos)

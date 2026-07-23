@@ -1154,6 +1154,32 @@ body {
     border-radius: 99px;
 }
 
+/* Coluna "Observação" (Admin Master) na tabela de resultados detalhados:
+   trunca texto longo com reticências; o tooltip nativo do navegador (title)
+   mostra o texto completo ao passar o mouse */
+.obs-truncate {
+    display: inline-block;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: help;
+}
+
+/* Lista de "Resultados enviados pelos CRAs" dentro do card de objetivo:
+   mostra no máximo ~3 itens e rola o restante, sem esticar o card */
+.resultados-cra-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--cinza-borda) transparent;
+}
+
 
 .chart-wrap {
     position: relative;

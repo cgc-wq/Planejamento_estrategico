@@ -33,6 +33,66 @@ const runMigrations = async () => {
     `);
     
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS objetivo_resultados (
+        id SERIAL PRIMARY KEY,
+        objetivo_id VARCHAR(10) NOT NULL REFERENCES objetivos(id),
+        entidade VARCHAR(100) NOT NULL,
+        usuario_id INTEGER REFERENCES usuarios(id),
+        resultado NUMERIC(15,2) NOT NULL,
+        observacao TEXT,
+        evidencia_url TEXT NOT NULL,
+        evidencia_nome TEXT,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_objetivo_resultados_objetivo_id ON objetivo_resultados(objetivo_id);
+    `);
+
+    const getOrCreatePerspectiva = async (nome) => {
+      const existente = await pool.query('SELECT id FROM perspectivas WHERE nome = $1', [nome]);
+      if (existente.rows.length > 0) return existente.rows[0].id;
+      const inserido = await pool.query('INSERT INTO perspectivas (nome) VALUES ($1) RETURNING id', [nome]);
+      return inserido.rows[0].id;
+    };
+
+    const perspectivasSeed = {
+      sustentabilidade: 'Sustentabilidade Social e Ambiental',
+      processos: 'Desenvolvimento Institucional / Processos Internos',
+      clientes: 'Clientes',
+      financeiro: 'Financeira / Sustentabilidade Econômica'
+    };
+    const perspIds = {};
+    for (const [key, nome] of Object.entries(perspectivasSeed)) {
+      perspIds[key] = await getOrCreatePerspectiva(nome);
+    }
+
+    const objetivosSeed = [
+      { id: 'SA1', persp: 'sustentabilidade', nome: 'Estimular uso de energia solar no Sistema CFA/CRAs' },
+      { id: 'SA2', persp: 'sustentabilidade', nome: 'Desenvolver conscientização na internalização dos ODS e ESG' },
+      { id: 'SA3', persp: 'sustentabilidade', nome: 'Apoiar ações ESG na sociedade' },
+      { id: 'SA4', persp: 'sustentabilidade', nome: 'Disseminar ações de digitalização/virtualização' },
+      { id: 'SA5', persp: 'sustentabilidade', nome: 'Promover ações de economia circular' },
+      { id: 'PI1', persp: 'processos', nome: 'Empreender nivelamento de transformação digital e padronização de processos entre o CFA e os CRAs' },
+      { id: 'PI2', persp: 'processos', nome: 'Orientar o gerenciamento dos processos nos Conselhos Regionais' },
+      { id: 'PI3', persp: 'processos', nome: 'Capacitar colaboradores e conselheiros' },
+      { id: 'PI4', persp: 'processos', nome: 'Estabelecer e gerenciar indicadores de monitoramento' },
+      { id: 'CL1', persp: 'clientes', nome: 'Fortalecer as competências dos registrados' },
+      { id: 'CL2', persp: 'clientes', nome: 'Fortalecer a identidade profissional' },
+      { id: 'CL3', persp: 'clientes', nome: 'Incentivar e desenvolver projetos inovadores voltados aos profissionais de Administração' },
+      { id: 'FI1', persp: 'financeiro', nome: 'Implementar tecnologias de fiscalização unificadas com os Conselhos Regionais' },
+      { id: 'FI2', persp: 'financeiro', nome: 'Aprimorar a gestão financeira' },
+      { id: 'FI3', persp: 'financeiro', nome: 'Prospectar e buscar novas fontes de receita' }
+    ];
+
+    for (const obj of objetivosSeed) {
+      await pool.query(
+        `INSERT INTO objetivos (id, nome, perspectiva_id) VALUES ($1, $2, $3)
+         ON CONFLICT (id) DO NOTHING`,
+        [obj.id, obj.nome, perspIds[obj.persp]]
+      );
+    }
+    console.log('[DB] Objetivos padrão garantidos (15 objetivos).');
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS swot_items (
         id SERIAL PRIMARY KEY,
         tipo VARCHAR(50) NOT NULL,
