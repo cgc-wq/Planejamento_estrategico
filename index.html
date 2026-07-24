@@ -33,6 +33,47 @@ run star <html lang="pt-BR">
             </p>
         </div>
 
+        <div class="login-card" id="form-recover-view" style="display: none;">
+            <div
+                style="width: 60px; height: 60px; background: var(--azul-cfa); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; margin: 0 auto 20px;">
+                CFA</div>
+            <h2>Recuperar Senha</h2>
+            <p>Insira seu e-mail para receber as instruções de redefinição.</p>
+            <div class="form-group">
+                <label>E-mail da Unidade</label>
+                <input type="email" id="recover-email" placeholder="ex: admin@cfa.org.br" required>
+            </div>
+            <button id="btn-recover" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;"
+                onclick="window.enviarEmailRecuperacao()">Enviar Link</button>
+            <p style="text-align: center; margin-top: 15px; font-size: 13px;">
+                <a href="#" onclick="window.voltarParaLogin()"
+                    style="color: var(--azul-cfa); font-weight: bold;">Voltar para o Login</a>
+            </p>
+        </div>
+
+        <div class="login-card" id="form-reset-password-view" style="display: none;">
+            <div
+                style="width: 60px; height: 60px; background: var(--azul-cfa); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; margin: 0 auto 20px;">
+                CFA</div>
+            <h2>Nova Senha</h2>
+            <p>Crie uma nova senha de acesso segura para o painel.</p>
+            <div class="form-group">
+                <label>Nova Senha</label>
+                <input type="password" id="reset-senha" placeholder="Digite a nova senha" required>
+            </div>
+            <div class="form-group">
+                <label>Confirmar Nova Senha</label>
+                <input type="password" id="reset-senha-confirm" placeholder="Confirme a nova senha" required>
+            </div>
+            <button id="btn-reset-password" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;"
+                onclick="window.redefinirNovaSenha()">Salvar Nova Senha</button>
+            <p style="text-align: center; margin-top: 15px; font-size: 13px;">
+                <a href="#" onclick="window.voltarParaLogin()"
+                    style="color: var(--azul-cfa); font-weight: bold;">Cancelar e Voltar</a>
+            </p>
+        </div>
+
+
         <div class="login-card" id="form-register-view"
             style="display: none; max-width: 450px; max-height: 90vh; overflow-y: auto;">
             <div

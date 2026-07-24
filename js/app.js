@@ -263,18 +263,129 @@ window.salvarNovoItemSwot = async function() {
 window.toggleAuthScreens = function () {
     const loginView = document.getElementById('form-login-view');
     const regView = document.getElementById('form-register-view');
+    const recoverView = document.getElementById('form-recover-view');
+    const resetView = document.getElementById('form-reset-password-view');
 
     if (loginView && regView) {
         if (loginView.style.display === 'none') {
             loginView.style.display = 'block';
             regView.style.display = 'none';
+            if (recoverView) recoverView.style.display = 'none';
+            if (resetView) resetView.style.display = 'none';
         } else {
             loginView.style.display = 'none';
             regView.style.display = 'block';
+            if (recoverView) recoverView.style.display = 'none';
+            if (resetView) resetView.style.display = 'none';
         }
     }
 };
 
+window.recuperarSenha = function () {
+    const loginView = document.getElementById('form-login-view');
+    const regView = document.getElementById('form-register-view');
+    const recoverView = document.getElementById('form-recover-view');
+    const resetView = document.getElementById('form-reset-password-view');
+
+    if (loginView) loginView.style.display = 'none';
+    if (regView) regView.style.display = 'none';
+    if (recoverView) recoverView.style.display = 'block';
+    if (resetView) resetView.style.display = 'none';
+};
+
+window.voltarParaLogin = function () {
+    const loginView = document.getElementById('form-login-view');
+    const regView = document.getElementById('form-register-view');
+    const recoverView = document.getElementById('form-recover-view');
+    const resetView = document.getElementById('form-reset-password-view');
+
+    // Se estiver redefinindo senha e voltar para o login, limpamos o token da URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('token')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    if (loginView) loginView.style.display = 'block';
+    if (regView) regView.style.display = 'none';
+    if (recoverView) recoverView.style.display = 'none';
+    if (resetView) resetView.style.display = 'none';
+};
+
+window.enviarEmailRecuperacao = async function () {
+    const emailInput = document.getElementById('recover-email');
+    const email = emailInput ? emailInput.value.trim() : '';
+    const btn = document.getElementById('btn-recover');
+
+    if (!email) {
+        window.showToast('⚠️ Por favor, insira o e-mail.');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Enviando...';
+    }
+
+    try {
+        const success = await api.solicitarResetSenha(email);
+        if (success) {
+            if (emailInput) emailInput.value = '';
+            window.voltarParaLogin();
+        }
+    } catch (err) {
+        window.showToast('❌ Erro inesperado ao solicitar recuperação.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Enviar Link';
+        }
+    }
+};
+
+window.redefinirNovaSenha = async function () {
+    const senha = document.getElementById('reset-senha').value;
+    const senhaConfirm = document.getElementById('reset-senha-confirm').value;
+    const btn = document.getElementById('btn-reset-password');
+
+    if (!senha || !senhaConfirm) {
+        window.showToast('⚠️ Por favor, preencha todos os campos.');
+        return;
+    }
+
+    if (senha !== senhaConfirm) {
+        window.showToast('⚠️ As senhas não são iguais.');
+        return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+        window.showToast('❌ Token de redefinição não encontrado.');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Alterando...';
+    }
+
+    try {
+        const success = await api.redefinirSenha(token, senha);
+        if (success) {
+            document.getElementById('reset-senha').value = '';
+            document.getElementById('reset-senha-confirm').value = '';
+            window.voltarParaLogin();
+        }
+    } catch (err) {
+        window.showToast('❌ Erro ao redefinir a senha.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Salvar Nova Senha';
+        }
+    }
+};
 window.carregarUsuariosFirebase = api.carregarUsuariosFirebase;
 window.atualizarStatusUsuario = api.atualizarStatusUsuario;
 window.toggleSetorCFA = function () {
@@ -525,15 +636,32 @@ document.addEventListener('DOMContentLoaded', () => {
     views.renderSWOT();
     document.getElementById('m-perspectiva').addEventListener('change', acoes.updateObjetivos);
 
-    // Verifica se já existe um token salvo para auto-login
-    const savedUser = localStorage.getItem('pes_user');
-    const savedToken = localStorage.getItem('pes_token');
+    // Verifica se há token de redefinição de senha na URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
 
-    if (savedUser && savedToken) {
-        // Dispara o evento de autenticação se houver dados salvos
-        window.dispatchEvent(new CustomEvent('auth-changed', { detail: JSON.parse(savedUser) }));
-    } else {
+    if (token) {
+        // Limpa sessão anterior se houver, pois estamos em fluxo de redefinição
+        localStorage.removeItem('pes_user');
+        localStorage.removeItem('pes_token');
         window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
+
+        // Oculta tela de login e exibe a de redefinição
+        const loginView = document.getElementById('form-login-view');
+        const resetView = document.getElementById('form-reset-password-view');
+        if (loginView) loginView.style.display = 'none';
+        if (resetView) resetView.style.display = 'block';
+    } else {
+        // Verifica se já existe um token salvo para auto-login
+        const savedUser = localStorage.getItem('pes_user');
+        const savedToken = localStorage.getItem('pes_token');
+        
+        if (savedUser && savedToken) {
+            // Dispara o evento de autenticação se houver dados salvos
+            window.dispatchEvent(new CustomEvent('auth-changed', { detail: JSON.parse(savedUser) }));
+        } else {
+            window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
+        }
     }
 });
 console.log("FIM APP.JS");

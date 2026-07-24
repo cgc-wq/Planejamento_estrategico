@@ -5,9 +5,9 @@ const authController = require('../controllers/authController');
 const authenticateToken = require('../middlewares/auth');
 const { asyncHandler } = require('../middlewares/errorHandler');
 
-// Sem limite de tentativas, login/register eram alvo fácil de força bruta de
-// senha e enumeração de e-mail em massa. 10 tentativas / 15min por IP é
-// suficiente para uso legítimo e barra automação simples.
+// Sem limite de tentativas, login/forgot-password/register eram alvo fácil de
+// força bruta de senha e enumeração de e-mail em massa. 10 tentativas / 15min
+// por IP é suficiente para uso legítimo e barra automação simples.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -18,6 +18,8 @@ const authLimiter = rateLimit({
 
 router.post('/register', authLimiter, asyncHandler(authController.register));
 router.post('/login', authLimiter, asyncHandler(authController.login));
+router.post('/forgot-password', authLimiter, asyncHandler(authController.forgotPassword));
+router.post('/reset-password', authLimiter, asyncHandler(authController.resetPassword));
 router.get('/me', authenticateToken, authController.me);
 
 module.exports = router;
