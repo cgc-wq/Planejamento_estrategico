@@ -646,6 +646,41 @@ export async function rejeitarSolicitacao(id) {
     }
 }
 
+export async function solicitarResetSenha(email) {
+    try {
+        const res = await fetch(`${API_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao solicitar redefinição');
+
+        showToast('✅ Verifique seu e-mail para redefinir a senha.');
+        return true;
+    } catch (error) {
+        showToast(`❌ ${error.message}`);
+        return false;
+    }
+}
+
+export async function redefinirSenha(token, novaSenha) {
+    try {
+        const res = await fetch(`${API_URL}/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, senha: novaSenha })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao redefinir senha');
+
+        showToast('✅ Senha redefinida com sucesso!');
+        return true;
+    } catch (error) {
+        showToast(`❌ ${error.message}`);
+        return false;
+    }
+}
 
 // =============================================
 // NOMES CUSTOMIZADOS (Perspectivas e Objetivos)
