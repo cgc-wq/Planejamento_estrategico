@@ -2,7 +2,7 @@
 import { state, PERSPECTIVAS } from './data.js';
 import { showToast } from './utils.js';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = `${window.location.origin}/api`;
 
 // Auxiliar para pegar o token
 const getAuthHeaders = () => {
