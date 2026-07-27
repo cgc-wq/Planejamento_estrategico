@@ -20,6 +20,27 @@ window.animateCounter = utils.animateCounter;
 window.showPage = router.showPage;
 window.showTab = router.showTab;
 
+// Sidebar off-canvas no mobile (abaixo de 768px) — abre/fecha via botão
+// hamburguer e backdrop; em telas maiores essas classes não têm efeito
+// (a sidebar volta a ser a de sempre, controlada só por :hover).
+window.toggleMobileSidebar = function (forceOpen) {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (!sidebar || !backdrop) return;
+
+    const abrir = typeof forceOpen === 'boolean' ? forceOpen : !sidebar.classList.contains('mobile-open');
+    sidebar.classList.toggle('mobile-open', abrir);
+    backdrop.classList.toggle('open', abrir);
+};
+
+// Fecha a sidebar mobile automaticamente ao navegar para outra página,
+// pra não precisar de mais um toque extra pra fechar o menu.
+document.getElementById('sidebar')?.addEventListener('click', (e) => {
+    if (e.target.closest('.nav-item')) {
+        window.toggleMobileSidebar(false);
+    }
+});
+
 // 2. Autenticação e Banco de Dados (API)
 window.fazerLogin = api.fazerLogin;
 window.fazerLogout = api.fazerLogout;

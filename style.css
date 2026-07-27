@@ -39,6 +39,39 @@ body {
     overflow-x: hidden;
 }
 
+/* Botão hamburguer — só aparece em telas estreitas (ver @media abaixo);
+   fica fixo no topo pois cada página tem sua própria .topbar (não daria
+   pra colocar o botão dentro de uma única topbar). */
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 200;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    background: var(--azul-cfa);
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    z-index: 99;
+}
+
+.sidebar-backdrop.open {
+    display: block;
+}
+
 
 /* ===== TELA DE LOGIN ===== */
 #login-screen {
@@ -257,26 +290,34 @@ body {
     text-transform: uppercase;
     letter-spacing: .8px;
     margin-bottom: 8px;
+    /* Sem isso, um flex item com texto longo (ex: "SUSTENTABILIDADE") se
+       recusa a encolher abaixo do próprio conteúdo — daí o texto vazava por
+       cima do .p-tag vizinho em vez de quebrar linha. */
+    min-width: 0;
+    overflow-wrap: break-word;
 }
 
 
 /* ===== GRID LAYOUTS ===== */
+/* auto-fit/minmax em vez de repeat(N, 1fr) fixo — o número de colunas se
+   adapta sozinho à largura disponível, sem precisar de um @media por grid
+   (numa tela de 320-430px cada grid vira 1 coluna naturalmente). */
 .grid-4 {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 18px;
 }
 
 .grid-3 {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 18px;
     align-items: end;
 }
 
 .grid-2 {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 18px;
 }
 
@@ -290,6 +331,15 @@ body {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: 18px;
+}
+
+/* grid-12/grid-21 usam frações assimétricas (1fr 2fr) — auto-fit não dá pra
+   aplicar aqui, então empilha em 1 coluna abaixo de 640px. */
+@media (max-width: 640px) {
+    .grid-12,
+    .grid-21 {
+        grid-template-columns: 1fr;
+    }
 }
 
 
@@ -362,6 +412,10 @@ body {
     font-weight: 700;
     padding: 3px 10px;
     border-radius: 99px;
+    /* Mantém a pilula inteira numa linha só (não deforma o formato) — quem
+       cede espaço quando o card aperta é o título ao lado, não esse badge. */
+    white-space: nowrap;
+    flex-shrink: 0;
     color: var(--pc);
     background: var(--pb);
 }
@@ -904,6 +958,53 @@ body {
     box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.12);
 }
 
+/* ===== CARD DE OBJETIVO ESTRATÉGICO (Admin + histórico de resultados) =====
+   Estilos extraídos do inline pra fora do JS — sem isso não dá pra aplicar
+   media query nenhuma nesses elementos. */
+.obj-card-header {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.obj-card-header .obj-title {
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+.obj-card-footer {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.obj-card-footer .progress-track {
+    flex: 1 1 160px;
+}
+
+.obj-resultado-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12px;
+    background: #F7F7FA;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.obj-resultado-item .evidencia-link {
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 .form-group textarea {
     resize: vertical;
     min-height: 80px;
@@ -1438,6 +1539,91 @@ body {
     height: 40px;
     background: var(--cinza-borda);
     transform: translateX(-50%);
+}
+
+
+/* ===== RESPONSIVO — MOBILE/TABLET RETRATO ===== */
+@media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    /* Sidebar vira off-canvas: some da tela e só entra deslizando quando
+       a classe .mobile-open é ligada pelo botão hamburguer (ver app.js). */
+    .sidebar {
+        width: 220px;
+        transform: translateX(-100%);
+        transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    .sidebar:hover {
+        width: 220px;
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    .sidebar .nav-label {
+        opacity: 1;
+    }
+
+    .main {
+        margin-left: 0;
+    }
+
+    .page {
+        padding: 16px;
+        padding-top: 64px;
+        /* espaço pro botão hamburguer não cobrir o conteúdo */
+    }
+
+    /* Área de toque mínima (~44x44px) recomendada pra mobile — botões
+       pequenos (Salvar, Adicionar Resultado, editar nome) ficavam com
+       ~28px de altura. */
+    .btn-sm {
+        min-height: 44px;
+        padding: 10px 16px;
+    }
+
+    .btn-edit-nome {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* font-size < 16px num input faz o iOS Safari dar zoom automático ao
+       focar o campo — o .form-group já usava 13px; os campos "soltos" do
+       card de Objetivo (Indicador, Tipo de Meta, Meta/Resultado) nem
+       tinham font-size definido no inline, herdando o mesmo problema. */
+    .form-group input,
+    .form-group select,
+    .form-group textarea,
+    .card input,
+    .card select,
+    .card textarea {
+        font-size: 16px;
+    }
+
+    .obj-card-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .obj-card-footer .btn {
+        width: 100%;
+    }
+
+    .obj-resultado-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .obj-resultado-item .evidencia-link {
+        text-align: center;
+        padding-top: 8px;
+        border-top: 1px dashed var(--cinza-borda);
+        margin-top: 4px;
+    }
 }
 
 

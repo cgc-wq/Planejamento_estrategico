@@ -69,12 +69,12 @@ export function renderObjetivosEstrategicos() {
 
             // Nome do objetivo com botão de edição para admin
             if (isAdmin) {
-                html += `<div style="font-size:13px; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
-                    <span id="obj-label-${obj.id}">${obj.id} — ${obj.nome}</span>
+                html += `<div class="obj-card-header">
+                    <span class="obj-title" id="obj-label-${obj.id}">${obj.id} — ${obj.nome}</span>
                     <button class="btn-edit-nome" title="Editar nome do objetivo" onclick="window.iniciarEdicaoNome('obj_${obj.id}', '${escapeHTML(obj.nome).replace(/'/g, "\\'")}', this)">✏️</button>
                 </div>`;
             } else {
-                html += `<div style="font-size:13px; font-weight:700; margin-bottom:12px;">${obj.id} — ${obj.nome}</div>`;
+                html += `<div class="obj-card-header"><span class="obj-title">${obj.id} — ${obj.nome}</span></div>`;
             }
 
             if (isAdmin) {
@@ -83,7 +83,7 @@ export function renderObjetivosEstrategicos() {
                 html += `
           <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px; font-size:11px;">
             <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Indicador</label><input type="text" id="obj-ind-${obj.id}" value="${indicadorSafe}" placeholder="Nome do indicador geral..." style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; font-family:'Sora',sans-serif;"></div>
-            <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Tipo de Indicador</label>
+            <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Tipo de Meta</label>
               <select id="obj-tipo-${obj.id}" onchange="window.toggleObjIndicadorCampos('${obj.id}')" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; font-family:'Sora',sans-serif;">
                 <option value="numerico" ${tipo === 'numerico' ? 'selected' : ''}>Numérico (Quantidade, $, %)</option>
                 <option value="data" ${tipo === 'data' ? 'selected' : ''}>Data-Alvo (Milestone)</option>
@@ -103,8 +103,8 @@ export function renderObjetivosEstrategicos() {
                <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Status Atual (Resultado)</label><textarea id="obj-res-quali-${obj.id}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; font-family:'Sora',sans-serif; min-height:50px;">${escapeHTML(data.resultado_quali || '')}</textarea></div>
             </div>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; gap: 14px;">
-            ${tipo !== 'qualitativo' ? `<div style="flex:1;"><div class="progress-track" style="height:6px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div></div>` : `<div style="flex:1;"></div>`}
+          <div class="obj-card-footer">
+            ${tipo !== 'qualitativo' ? `<div class="progress-track" style="height:6px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div>` : `<div style="flex:1 1 160px;"></div>`}
             <button id="btn-salvar-obj-${obj.id}" class="btn btn-primary btn-sm" onclick="window.salvarObjetivoEstrategico('${obj.id}')">Salvar</button>
           </div>
         `;
@@ -128,7 +128,7 @@ export function renderObjetivosEstrategicos() {
             // Resultados enviados pelos CRAs (com evidência)
             const listaResultados = state.resultadosObjetivo[obj.id] || [];
             html += `<div style="margin-top:14px; padding-top:12px; border-top:1px dashed var(--cinza-borda);">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
+                <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
                     <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--texto-sec);">Resultados enviados pelos CRAs</span>
                     ${podePreencherResultado ? `<button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirModalResultado('${obj.id}', event)">➕ Adicionar Resultado</button>` : ''}
                 </div>`;
@@ -139,9 +139,9 @@ export function renderObjetivosEstrategicos() {
                 html += `<div class="resultados-cra-scroll">`;
                 listaResultados.forEach(r => {
                     const dataEnvio = r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : '';
-                    html += `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; background:#F7F7FA; border-radius:8px; padding:6px 10px;">
+                    html += `<div class="obj-resultado-item">
                         <div><strong>${escapeHTML(r.entidade || '')}</strong> — Resultado: ${formatarResultadoCra(r, tipo)} <span style="color:var(--texto-sec);">(${escapeHTML(r.autor_nome || '')}, ${dataEnvio})</span></div>
-                        <a href="${escapeHTML(r.evidencia_url)}" target="_blank" rel="noopener" style="font-weight:700; white-space:nowrap;">📎 Evidência</a>
+                        <a href="${escapeHTML(r.evidencia_url)}" target="_blank" rel="noopener" class="evidencia-link">📎 Evidência</a>
                     </div>`;
                 });
                 html += `</div>`;

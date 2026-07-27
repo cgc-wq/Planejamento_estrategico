@@ -21,7 +21,7 @@ export function updateDashboard() {
             const avgPct = as.length > 0 ? Math.round(as.reduce((s, a) => s + (a.execucao || 0), 0) / as.length) : 0;
             return `
       <div class="card ${p.classe}">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:6px;">
           <div class="card-title" style="color:var(--pc);">${p.icon} ${['sustentabilidade', 'clientes', 'processos', 'financeiro'][['sustentabilidade', 'clientes', 'processos', 'financeiro'].indexOf(key)]}</div>
           <div class="p-tag" style="font-size:10px;"><span class="p-dot"></span>${p.nome.split('/')[0].split('(')[0].trim()}</div>
         </div>
