@@ -13,6 +13,30 @@ const getAuthHeaders = () => {
     };
 };
 
+// Um token salvo que expirou (dura 8h) ou ficou inválido (ex: segredo do
+// servidor mudou) fazia toda chamada autenticada falhar com 401/403 em
+// silêncio — a tela ficava "logada" só que quebrada, cheia de erros no
+// console. Aqui a sessão é encerrada automaticamente nesse caso, voltando
+// para a tela de login em vez de deixar a UI num estado inconsistente.
+let sessaoExpiradaAvisada = false;
+const originalFetch = window.fetch.bind(window);
+window.fetch = async (...args) => {
+    const response = await originalFetch(...args);
+    const options = args[1];
+    const isAuthenticatedRequest = Boolean(options?.headers?.Authorization);
+
+    if (isAuthenticatedRequest && (response.status === 401 || response.status === 403)) {
+        localStorage.removeItem('pes_token');
+        localStorage.removeItem('pes_user');
+        if (!sessaoExpiradaAvisada) {
+            sessaoExpiradaAvisada = true;
+            showToast('⚠️ Sua sessão expirou. Faça login novamente.');
+        }
+        window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
+    }
+    return response;
+};
+
 export async function fazerLogin() {
     const email = document.getElementById('login-email').value.trim();
     const senha = document.getElementById('login-senha').value;
@@ -33,7 +57,8 @@ export async function fazerLogin() {
 
         localStorage.setItem('pes_token', data.token);
         localStorage.setItem('pes_user', JSON.stringify(data.user));
-        
+        sessaoExpiradaAvisada = false;
+
         // Simula o comportamento do Firebase Auth para o app.js
         window.dispatchEvent(new CustomEvent('auth-changed', { detail: data.user }));
 
