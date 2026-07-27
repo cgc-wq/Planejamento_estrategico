@@ -181,14 +181,27 @@ export async function salvarObjetivoEstrategico(id) {
     if (btn) { btn.disabled = true; btn.textContent = '...'; }
 
     const indicador = document.getElementById(`obj-ind-${id}`).value.trim();
-    const meta = parseFloat(document.getElementById(`obj-meta-${id}`).value) || 0;
-    const resultado = parseFloat(document.getElementById(`obj-res-${id}`).value) || 0;
+    const tipo = document.getElementById(`obj-tipo-${id}`)?.value || 'numerico';
+
+    // Só lê os campos do tipo selecionado — os das outras caixas (ocultas
+    // pelo toggleObjIndicadorCampos) nem existem preenchidos de verdade.
+    const payload = { indicador, indicador_tipo: tipo };
+    if (tipo === 'numerico') {
+        payload.meta = parseFloat(document.getElementById(`obj-meta-${id}`).value) || 0;
+        payload.resultado = parseFloat(document.getElementById(`obj-res-${id}`).value) || 0;
+    } else if (tipo === 'data') {
+        payload.meta_data = document.getElementById(`obj-meta-data-${id}`).value || null;
+        payload.resultado_data = document.getElementById(`obj-res-data-${id}`).value || null;
+    } else if (tipo === 'qualitativo') {
+        payload.meta_quali = document.getElementById(`obj-meta-quali-${id}`).value.trim();
+        payload.resultado_quali = document.getElementById(`obj-res-quali-${id}`).value.trim();
+    }
 
     try {
         const res = await fetch(`${API_URL}/objetivos/${id}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ indicador, meta, resultado })
+            body: JSON.stringify(payload)
         });
         if (!res.ok) throw new Error();
         showToast(`✅ Objetivo ${id} atualizado!`);
@@ -264,21 +277,43 @@ export async function salvarResultadoObjetivo(event) {
             return;
         }
 
-        const resultadoInput = document.getElementById('resultado-modal-valor');
         const observacaoInput = document.getElementById('resultado-modal-observacao');
-        if (!resultadoInput || !observacaoInput) {
+        if (!observacaoInput) {
             console.error('[Resultado Objetivo] Campos do modal não encontrados no DOM.');
             showToast('❌ Erro interno: campos do formulário não encontrados.');
             return;
         }
 
-        const resultado = parseFloat(resultadoInput.value);
-        const arquivo = state.resultadoModalArquivo;
+        // O campo (e a validação) obrigatório muda conforme o Tipo de Indicador
+        // configurado pelo Admin para esse objetivo — ver abrirModalResultado().
+        const tipo = state.resultadoModalTipo || 'numerico';
+        let payloadResultado = {};
 
-        if (isNaN(resultado) || resultado < 0 || resultado > 100) {
-            showToast('⚠️ Informe um percentual de resultado válido (0 a 100).');
-            return;
+        if (tipo === 'numerico') {
+            const resultadoInput = document.getElementById('resultado-modal-valor');
+            const resultado = parseFloat(resultadoInput?.value);
+            if (!resultadoInput || isNaN(resultado)) {
+                showToast('⚠️ Informe um valor numérico válido para o resultado.');
+                return;
+            }
+            payloadResultado = { resultado };
+        } else if (tipo === 'data') {
+            const dataInput = document.getElementById('resultado-modal-data');
+            if (!dataInput || !dataInput.value) {
+                showToast('⚠️ Informe a data alcançada.');
+                return;
+            }
+            payloadResultado = { resultado_data: dataInput.value };
+        } else if (tipo === 'qualitativo') {
+            const qualiInput = document.getElementById('resultado-modal-quali');
+            if (!qualiInput || !qualiInput.value.trim()) {
+                showToast('⚠️ Descreva o progresso/status alcançado.');
+                return;
+            }
+            payloadResultado = { resultado_quali: qualiInput.value.trim() };
         }
+
+        const arquivo = state.resultadoModalArquivo;
         if (!arquivo) {
             showToast('⚠️ Anexe uma evidência antes de salvar.');
             return;
@@ -307,7 +342,7 @@ export async function salvarResultadoObjetivo(event) {
 
         // 2) Só agora grava o resultado, já com a evidencia_url confirmada pelo servidor
         const payload = {
-            resultado,
+            ...payloadResultado,
             observacao: observacaoInput.value.trim(),
             evidencia_url: uploadData.url,
             evidencia_nome: uploadData.name

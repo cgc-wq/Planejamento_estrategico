@@ -27,6 +27,7 @@ window.carregarAcoesFirebase = api.carregarAcoesFirebase;
 window.carregarTodasAcoesFirebase = api.carregarTodasAcoesFirebase;
 window.carregarObjetivosFirebase = api.carregarObjetivosFirebase;
 window.salvarObjetivoEstrategico = api.salvarObjetivoEstrategico;
+window.toggleObjIndicadorCampos = views.toggleObjIndicadorCampos;
 window.carregarResultadosObjetivo = api.carregarResultadosObjetivo;
 window.handleResultadoEvidenciaUpload = api.handleResultadoEvidenciaUpload;
 window.salvarResultadoObjetivo = api.salvarResultadoObjetivo;
@@ -212,19 +213,35 @@ window.abrirModalResultado = function(objId, event) {
 
     const overlay = document.getElementById('modal-resultado-overlay');
     const valor = document.getElementById('resultado-modal-valor');
+    const dataInput = document.getElementById('resultado-modal-data');
+    const qualiInput = document.getElementById('resultado-modal-quali');
     const observacao = document.getElementById('resultado-modal-observacao');
     const preview = document.getElementById('resultado-anexo-preview');
     const uploadArea = document.getElementById('resultado-anexo-upload-area');
     const status = document.getElementById('resultado-anexo-status');
     const titulo = document.getElementById('resultado-modal-titulo');
+    const boxNumerico = document.getElementById('box-resultado-numerico');
+    const boxData = document.getElementById('box-resultado-data');
+    const boxQuali = document.getElementById('box-resultado-quali');
 
     if (!overlay) return;
 
     state.resultadoModalObjId = objId;
     state.resultadoModalArquivo = null;
 
+    // O formulário se adapta ao Tipo de Indicador que o Admin configurou
+    // para esse objetivo (numerico | data | qualitativo).
+    const tipo = (state.objetivosGlobais[objId] && state.objetivosGlobais[objId].indicador_tipo) || 'numerico';
+    state.resultadoModalTipo = tipo;
+
+    if (boxNumerico) boxNumerico.style.display = tipo === 'numerico' ? 'block' : 'none';
+    if (boxData) boxData.style.display = tipo === 'data' ? 'block' : 'none';
+    if (boxQuali) boxQuali.style.display = tipo === 'qualitativo' ? 'block' : 'none';
+
     if (titulo) titulo.textContent = `Adicionar resultado — ${objId}`;
     if (valor) valor.value = '';
+    if (dataInput) dataInput.value = '';
+    if (qualiInput) qualiInput.value = '';
     if (observacao) observacao.value = '';
     if (preview) preview.style.display = 'none';
     if (uploadArea) uploadArea.style.display = 'flex';

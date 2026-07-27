@@ -9,13 +9,24 @@ const runMigrations = async () => {
   try {
     console.log('[DB] Iniciando migrações...');
     await pool.query(`
-      ALTER TABLE usuarios 
+      ALTER TABLE usuarios
       ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255),
       ADD COLUMN IF NOT EXISTS reset_token_exp TIMESTAMP,
       ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'usuario',
       ADD COLUMN IF NOT EXISTS cra_admin_scope VARCHAR(100);
     `);
-    
+
+    // Tipo de indicador por objetivo (numerico | data | qualitativo) — define
+    // qual formulário o CRA vê ao registrar o resultado daquele objetivo.
+    await pool.query(`
+      ALTER TABLE objetivos
+      ADD COLUMN IF NOT EXISTS indicador_tipo VARCHAR(20) DEFAULT 'numerico',
+      ADD COLUMN IF NOT EXISTS meta_data DATE,
+      ADD COLUMN IF NOT EXISTS meta_quali TEXT,
+      ADD COLUMN IF NOT EXISTS resultado_data DATE,
+      ADD COLUMN IF NOT EXISTS resultado_quali TEXT;
+    `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS perspectivas_custom (
         chave VARCHAR(100) PRIMARY KEY,
@@ -45,6 +56,16 @@ const runMigrations = async () => {
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE INDEX IF NOT EXISTS idx_objetivo_resultados_objetivo_id ON objetivo_resultados(objetivo_id);
+    `);
+
+    // resultado NUMERIC era NOT NULL (só existia o tipo numérico); nos tipos
+    // "data" e "qualitativo" o valor enviado pelo CRA vai em resultado_data /
+    // resultado_quali, então resultado passa a poder ficar em branco.
+    await pool.query(`
+      ALTER TABLE objetivo_resultados
+      ADD COLUMN IF NOT EXISTS resultado_data DATE,
+      ADD COLUMN IF NOT EXISTS resultado_quali TEXT,
+      ALTER COLUMN resultado DROP NOT NULL;
     `);
 
     const getOrCreatePerspectiva = async (nome) => {

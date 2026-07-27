@@ -1,6 +1,31 @@
 import { state, ADMIN_EMAIL, PERSPECTIVAS, SWOT_DATA, STATUS_CHIPS, STATUS_LABELS } from './data.js';
 import { escapeHTML } from './utils.js';
 
+// Mesmo padrão de "Tipo de Indicador" já usado no modal de Ações
+// (ver window.toggleIndicadorCampos em acoes.js) — aqui aplicado por
+// objetivo, já que cada card fica sempre visível na tela (não é um modal).
+export function toggleObjIndicadorCampos(objId) {
+    const t = document.getElementById(`obj-tipo-${objId}`).value;
+    const boxNumerico = document.getElementById(`box-obj-numerico-${objId}`);
+    const boxData = document.getElementById(`box-obj-data-${objId}`);
+    const boxQuali = document.getElementById(`box-obj-quali-${objId}`);
+    if (boxNumerico) boxNumerico.style.display = t === 'numerico' ? 'flex' : 'none';
+    if (boxData) boxData.style.display = t === 'data' ? 'flex' : 'none';
+    if (boxQuali) boxQuali.style.display = t === 'qualitativo' ? 'flex' : 'none';
+}
+
+const formatarResultadoCra = (r, tipo) => {
+    if (tipo === 'data') {
+        return r.resultado_data ? new Date(r.resultado_data + 'T00:00:00').toLocaleDateString('pt-BR') : '(sem data)';
+    }
+    if (tipo === 'qualitativo') {
+        return escapeHTML(r.resultado_quali || '(sem descrição)');
+    }
+    // "Numérico" agora é de propósito geral (quantidade, R$, % — a critério do
+    // indicador definido pelo Admin), então não força mais um sufixo "%" fixo.
+    return escapeHTML(String(parseFloat(r.resultado) || 0));
+};
+
 export function renderObjetivosEstrategicos() {
     const c = document.getElementById('objetivos-content');
     if (!c) return;
@@ -25,9 +50,19 @@ export function renderObjetivosEstrategicos() {
 
         p.objetivos.forEach(obj => {
             const data = state.objetivosGlobais[obj.id] || { indicador: '', meta: '', resultado: '' };
+            const tipo = data.indicador_tipo || 'numerico';
             const indicadorSafe = escapeHTML(data.indicador);
-            const metaVal = parseFloat(data.meta) || 0, resVal = parseFloat(data.resultado) || 0;
-            let pct = metaVal > 0 ? Math.min(100, Math.round((resVal / metaVal) * 100)) : 0;
+
+            // Barra de progresso só faz sentido pra numérico (meta/resultado
+            // comparáveis) e data (atingido ou não); qualitativo não tem % — mostra
+            // só o texto do status mais recente.
+            let pct = 0;
+            if (tipo === 'numerico') {
+                const metaVal = parseFloat(data.meta) || 0, resVal = parseFloat(data.resultado) || 0;
+                pct = metaVal > 0 ? Math.min(100, Math.round((resVal / metaVal) * 100)) : 0;
+            } else if (tipo === 'data') {
+                pct = data.resultado_data ? 100 : 0;
+            }
             const barColor = pct >= 80 ? '#1BA05B' : pct >= 50 ? '#E8A020' : '#C0392B';
 
             html += `<div class="card" style="border-left: 4px solid ${p.cor}; padding:18px;">`;
@@ -43,21 +78,51 @@ export function renderObjetivosEstrategicos() {
             }
 
             if (isAdmin) {
+                const metaDataVal = data.meta_data ? String(data.meta_data).split('T')[0] : '';
+                const resDataVal = data.resultado_data ? String(data.resultado_data).split('T')[0] : '';
                 html += `
           <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px; font-size:11px;">
             <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Indicador</label><input type="text" id="obj-ind-${obj.id}" value="${indicadorSafe}" placeholder="Nome do indicador geral..." style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; font-family:'Sora',sans-serif;"></div>
-            <div style="display:flex; gap:10px;">
+            <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Tipo de Indicador</label>
+              <select id="obj-tipo-${obj.id}" onchange="window.toggleObjIndicadorCampos('${obj.id}')" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; font-family:'Sora',sans-serif;">
+                <option value="numerico" ${tipo === 'numerico' ? 'selected' : ''}>Numérico (Quantidade, $, %)</option>
+                <option value="data" ${tipo === 'data' ? 'selected' : ''}>Data-Alvo (Milestone)</option>
+                <option value="qualitativo" ${tipo === 'qualitativo' ? 'selected' : ''}>Qualitativo (Subjetivo/Progresso)</option>
+              </select>
+            </div>
+            <div id="box-obj-numerico-${obj.id}" style="display:${tipo === 'numerico' ? 'flex' : 'none'}; gap:10px;">
                <div style="flex:1;"><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Meta</label><input type="number" id="obj-meta-${obj.id}" value="${data.meta || ''}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px;"></div>
                <div style="flex:1;"><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Resultado</label><input type="number" id="obj-res-${obj.id}" value="${data.resultado || ''}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px;"></div>
             </div>
+            <div id="box-obj-data-${obj.id}" style="display:${tipo === 'data' ? 'flex' : 'none'}; gap:10px;">
+               <div style="flex:1;"><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Data-Alvo (Meta)</label><input type="date" id="obj-meta-data-${obj.id}" value="${metaDataVal}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px;"></div>
+               <div style="flex:1;"><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Data Alcançada</label><input type="date" id="obj-res-data-${obj.id}" value="${resDataVal}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px;"></div>
+            </div>
+            <div id="box-obj-quali-${obj.id}" style="display:${tipo === 'qualitativo' ? 'flex' : 'none'}; flex-direction:column; gap:8px;">
+               <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Descrição do Alvo (Meta)</label><textarea id="obj-meta-quali-${obj.id}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; font-family:'Sora',sans-serif; min-height:50px;">${escapeHTML(data.meta_quali || '')}</textarea></div>
+               <div><label style="display:block; font-weight:700; color:var(--texto-sec); margin-bottom:2px; text-transform:uppercase;">Status Atual (Resultado)</label><textarea id="obj-res-quali-${obj.id}" style="width:100%; padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; font-family:'Sora',sans-serif; min-height:50px;">${escapeHTML(data.resultado_quali || '')}</textarea></div>
+            </div>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; gap: 14px;">
-            <div style="flex:1;"><div class="progress-track" style="height:6px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div></div>
+            ${tipo !== 'qualitativo' ? `<div style="flex:1;"><div class="progress-track" style="height:6px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div></div>` : `<div style="flex:1;"></div>`}
             <button id="btn-salvar-obj-${obj.id}" class="btn btn-primary btn-sm" onclick="window.salvarObjetivoEstrategico('${obj.id}')">Salvar</button>
           </div>
         `;
             } else {
-                html += `<div style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-bottom:12px; color:var(--texto-sec);"><div><strong>Indicador:</strong> <span style="color:var(--texto);">${indicadorSafe || 'Aguardando definição'}</span></div><div><strong>Meta:</strong> <span style="color:var(--texto);">${data.meta || '0'}</span> | <strong>Atual:</strong> <span style="color:var(--texto);">${data.resultado || '0'}</span></div></div><div style="display:flex; align-items:center; gap:10px;"><div style="flex:1;"><div class="progress-track" style="height:8px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div></div><div style="font-weight:800; font-size:14px; color:${barColor};">${pct}%</div></div>`;
+                let metaAtualTexto;
+                if (tipo === 'data') {
+                    const metaFmt = data.meta_data ? new Date(String(data.meta_data).split('T')[0] + 'T00:00:00').toLocaleDateString('pt-BR') : '(sem data)';
+                    const resFmt = data.resultado_data ? new Date(String(data.resultado_data).split('T')[0] + 'T00:00:00').toLocaleDateString('pt-BR') : 'Ainda não alcançada';
+                    metaAtualTexto = `<strong>Data-Alvo:</strong> <span style="color:var(--texto);">${metaFmt}</span> | <strong>Alcançada em:</strong> <span style="color:var(--texto);">${resFmt}</span>`;
+                } else if (tipo === 'qualitativo') {
+                    metaAtualTexto = `<strong>Alvo:</strong> <span style="color:var(--texto);">${escapeHTML(data.meta_quali) || 'Aguardando definição'}</span><br><strong>Status atual:</strong> <span style="color:var(--texto);">${escapeHTML(data.resultado_quali) || 'Sem atualização'}</span>`;
+                } else {
+                    metaAtualTexto = `<strong>Meta:</strong> <span style="color:var(--texto);">${data.meta || '0'}</span> | <strong>Atual:</strong> <span style="color:var(--texto);">${data.resultado || '0'}</span>`;
+                }
+                html += `<div style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-bottom:12px; color:var(--texto-sec);"><div><strong>Indicador:</strong> <span style="color:var(--texto);">${indicadorSafe || 'Aguardando definição'}</span></div><div>${metaAtualTexto}</div></div>`;
+                if (tipo !== 'qualitativo') {
+                    html += `<div style="display:flex; align-items:center; gap:10px;"><div style="flex:1;"><div class="progress-track" style="height:8px; background:#e0e0e0;"><div class="progress-fill" style="width:${pct}%;background:${barColor};"></div></div></div><div style="font-weight:800; font-size:14px; color:${barColor};">${pct}%</div></div>`;
+                }
             }
 
             // Resultados enviados pelos CRAs (com evidência)
@@ -75,7 +140,7 @@ export function renderObjetivosEstrategicos() {
                 listaResultados.forEach(r => {
                     const dataEnvio = r.criado_em ? new Date(r.criado_em).toLocaleDateString('pt-BR') : '';
                     html += `<div style="display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:12px; background:#F7F7FA; border-radius:8px; padding:6px 10px;">
-                        <div><strong>${escapeHTML(r.entidade || '')}</strong> — Resultado: ${escapeHTML(String(parseFloat(r.resultado)))}% <span style="color:var(--texto-sec);">(${escapeHTML(r.autor_nome || '')}, ${dataEnvio})</span></div>
+                        <div><strong>${escapeHTML(r.entidade || '')}</strong> — Resultado: ${formatarResultadoCra(r, tipo)} <span style="color:var(--texto-sec);">(${escapeHTML(r.autor_nome || '')}, ${dataEnvio})</span></div>
                         <a href="${escapeHTML(r.evidencia_url)}" target="_blank" rel="noopener" style="font-weight:700; white-space:nowrap;">📎 Evidência</a>
                     </div>`;
                 });

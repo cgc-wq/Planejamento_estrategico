@@ -238,18 +238,39 @@ exports.listarObjetivos = async (req, res) => {
   res.json(objetivosMap);
 };
 
+const TIPOS_INDICADOR = ['numerico', 'data', 'qualitativo'];
+
 exports.atualizarObjetivo = async (req, res) => {
   const { id } = req.params;
-  const { indicador, meta, resultado } = req.body;
+  const { indicador, indicador_tipo, meta, resultado, meta_data, resultado_data, meta_quali, resultado_quali } = req.body;
   const isMasterAdmin = req.user.email === process.env.ADMIN_EMAIL;
 
   if (!isMasterAdmin) {
     return res.status(403).json({ message: 'Apenas o Administrador Master pode editar a meta e o indicador geral do objetivo.' });
   }
 
+  const tipo = indicador_tipo || 'numerico';
+  if (!TIPOS_INDICADOR.includes(tipo)) {
+    return res.status(400).json({ message: 'Tipo de indicador inválido.' });
+  }
+
+  // Só grava os campos do tipo escolhido — os das outras colunas ficam nulos,
+  // evitando que dado de um tipo antigo "vaze" pro tipo novo depois da troca.
   await pool.query(
-    'UPDATE objetivos SET indicador = $1, meta = $2, resultado = $3, atualizado_em = CURRENT_TIMESTAMP WHERE id = $4',
-    [indicador, meta, resultado, id]
+    `UPDATE objetivos SET
+      indicador = $1, indicador_tipo = $2,
+      meta = $3, resultado = $4,
+      meta_data = $5, resultado_data = $6,
+      meta_quali = $7, resultado_quali = $8,
+      atualizado_em = CURRENT_TIMESTAMP
+    WHERE id = $9`,
+    [
+      indicador, tipo,
+      tipo === 'numerico' ? meta : null, tipo === 'numerico' ? resultado : null,
+      tipo === 'data' ? (meta_data || null) : null, tipo === 'data' ? (resultado_data || null) : null,
+      tipo === 'qualitativo' ? (meta_quali || null) : null, tipo === 'qualitativo' ? (resultado_quali || null) : null,
+      id
+    ]
   );
   res.json({ message: 'Objetivo atualizado' });
 };
@@ -284,7 +305,8 @@ exports.listarResultadosObjetivo = async (req, res) => {
   result.rows.forEach(row => {
     // node-postgres retorna NUMERIC como string (ex: "15.00"); convertendo para
     // Number aqui, o JSON.stringify já sai sem zeros decimais à toa (15, 15.5, ...)
-    row.resultado = Number(row.resultado);
+    // Nos tipos "data"/"qualitativo" resultado fica null — não converter isso pra 0.
+    row.resultado = row.resultado !== null ? Number(row.resultado) : null;
     if (!agrupado[row.objetivo_id]) agrupado[row.objetivo_id] = [];
     agrupado[row.objetivo_id].push(row);
   });
@@ -299,12 +321,35 @@ exports.criarResultadoObjetivo = async (req, res) => {
     return res.status(403).json({ message: 'O Administrador Master apenas visualiza os resultados. O preenchimento é exclusivo dos usuários e administradores dos CRAs.' });
   }
 
-  const { resultado, observacao, evidencia_url, evidencia_nome } = req.body;
-  const resultadoNum = parseFloat(resultado);
-
-  if (resultado === undefined || resultado === null || resultado === '' || isNaN(resultadoNum) || resultadoNum < 0 || resultadoNum > 100) {
-    return res.status(400).json({ message: 'Informe um percentual de resultado válido (0 a 100).' });
+  const objetivoAtual = await pool.query('SELECT indicador_tipo FROM objetivos WHERE id = $1', [id]);
+  if (objetivoAtual.rows.length === 0) {
+    return res.status(404).json({ message: 'Objetivo não encontrado' });
   }
+  const tipo = objetivoAtual.rows[0].indicador_tipo || 'numerico';
+
+  const { resultado, resultado_data, resultado_quali, observacao, evidencia_url, evidencia_nome } = req.body;
+
+  // Só o campo do tipo configurado pelo Admin pra esse objetivo é validado/gravado —
+  // os outros dois ficam null, igual ao mesmo tratamento feito em atualizarObjetivo.
+  let resultadoNum = null, resultadoDataVal = null, resultadoQualiVal = null;
+
+  if (tipo === 'numerico') {
+    resultadoNum = parseFloat(resultado);
+    if (resultado === undefined || resultado === null || resultado === '' || isNaN(resultadoNum)) {
+      return res.status(400).json({ message: 'Informe um valor numérico válido para o resultado.' });
+    }
+  } else if (tipo === 'data') {
+    if (!resultado_data) {
+      return res.status(400).json({ message: 'Informe a data alcançada.' });
+    }
+    resultadoDataVal = resultado_data;
+  } else if (tipo === 'qualitativo') {
+    if (!resultado_quali || !resultado_quali.trim()) {
+      return res.status(400).json({ message: 'Descreva o progresso/status alcançado.' });
+    }
+    resultadoQualiVal = resultado_quali.trim();
+  }
+
   if (!evidencia_url) {
     return res.status(400).json({ message: 'É obrigatório anexar uma evidência.' });
   }
@@ -315,12 +360,12 @@ exports.criarResultadoObjetivo = async (req, res) => {
   const entidade = req.user.cra_admin_scope || req.user.entidade || req.user.grupo;
 
   const insert = await pool.query(
-    `INSERT INTO objetivo_resultados (objetivo_id, entidade, usuario_id, resultado, observacao, evidencia_url, evidencia_nome)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-    [id, entidade, req.user.id, resultadoNum, observacao || null, evidencia_url, evidencia_nome || null]
+    `INSERT INTO objetivo_resultados (objetivo_id, entidade, usuario_id, resultado, resultado_data, resultado_quali, observacao, evidencia_url, evidencia_nome)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    [id, entidade, req.user.id, resultadoNum, resultadoDataVal, resultadoQualiVal, observacao || null, evidencia_url, evidencia_nome || null]
   );
 
   const row = insert.rows[0];
-  row.resultado = Number(row.resultado); // mesmo tratamento do listar, para o retorno do POST já vir limpo
+  row.resultado = row.resultado !== null ? Number(row.resultado) : null; // mesmo tratamento do listar, para o retorno do POST já vir limpo
   res.status(201).json(row);
 };

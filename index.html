@@ -618,14 +618,21 @@ run star <html lang="pt-BR">
     <div class="modal-overlay" id="modal-resultado-overlay" onclick="window.fecharModalResultado(event)">
         <div class="modal" onclick="event.stopPropagation()" style="max-width: 520px;">
             <h2 id="resultado-modal-titulo">Adicionar resultado</h2>
-            <p style="font-size: 13px; color: var(--texto-sec); margin-bottom: 16px;">Informe o percentual de resultado alcançado pelo seu CRA e anexe a evidência correspondente.</p>
+            <p style="font-size: 13px; color: var(--texto-sec); margin-bottom: 16px;">Informe o resultado alcançado pelo seu CRA e anexe a evidência correspondente.</p>
 
-            <div class="form-group">
-                <label>Resultado (%) *</label>
-                <div style="position:relative;">
-                    <input type="number" id="resultado-modal-valor" min="0" max="100" step="0.01" placeholder="Ex: 75" style="width:100%; padding-right:34px; box-sizing:border-box;">
-                    <span style="position:absolute; right:12px; top:50%; transform:translateY(-50%); font-weight:700; color:var(--texto-sec); pointer-events:none;">%</span>
-                </div>
+            <div class="form-group" id="box-resultado-numerico">
+                <label>Resultado *</label>
+                <input type="number" id="resultado-modal-valor" step="0.01" placeholder="Ex: 75" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div class="form-group" id="box-resultado-data" style="display:none;">
+                <label>Data alcançada *</label>
+                <input type="date" id="resultado-modal-data" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div class="form-group" id="box-resultado-quali" style="display:none;">
+                <label>Descrição do progresso/status *</label>
+                <textarea id="resultado-modal-quali" placeholder="Descreva o status/progresso atual..." style="min-height: 80px;"></textarea>
             </div>
 
             <div class="form-group">
