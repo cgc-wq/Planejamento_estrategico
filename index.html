@@ -23,8 +23,15 @@ run star <html lang="pt-BR">
             <p>Painel de Execução do PES 2023-2026</p>
             <div class="form-group"><label>E-mail da Unidade</label><input type="email" id="login-email"
                     placeholder="ex: usuário@cfa.org.br" required></div>
-            <div class="form-group"><label>Senha</label><input type="password" id="login-senha"
-                    placeholder="Sua senha secreta" onkeypress="if(event.key==='Enter') window.fazerLogin()"></div>
+            <div class="form-group"><label>Senha</label>
+                <div class="password-field"><input type="password" id="login-senha"
+                        placeholder="Sua senha secreta" onkeypress="if(event.key==='Enter') window.fazerLogin()">
+                    <button type="button" class="toggle-senha" onclick="window.toggleSenhaVisibilidade(this)" aria-label="Mostrar senha">
+                        <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
+            </div>
             <button id="btn-login" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;"
                 onclick="window.fazerLogin()">Entrar</button>
             <p style="text-align: center; margin-top: 15px; font-size: 13px;">
@@ -59,11 +66,21 @@ run star <html lang="pt-BR">
             <p>Crie uma nova senha de acesso segura para o painel.</p>
             <div class="form-group">
                 <label>Nova Senha</label>
-                <input type="password" id="reset-senha" placeholder="Digite a nova senha" required>
+                <div class="password-field"><input type="password" id="reset-senha" placeholder="Digite a nova senha" required>
+                    <button type="button" class="toggle-senha" onclick="window.toggleSenhaVisibilidade(this)" aria-label="Mostrar senha">
+                        <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
             </div>
             <div class="form-group">
                 <label>Confirmar Nova Senha</label>
-                <input type="password" id="reset-senha-confirm" placeholder="Confirme a nova senha" required>
+                <div class="password-field"><input type="password" id="reset-senha-confirm" placeholder="Confirme a nova senha" required>
+                    <button type="button" class="toggle-senha" onclick="window.toggleSenhaVisibilidade(this)" aria-label="Mostrar senha">
+                        <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
             </div>
             <button id="btn-reset-password" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;"
                 onclick="window.redefinirNovaSenha()">Salvar Nova Senha</button>
@@ -86,8 +103,15 @@ run star <html lang="pt-BR">
             </div>
             <div class="form-group"><label>E-mail institucional</label><input type="email" id="reg-email"
                     placeholder="ex: usuario@cra.org.br"></div>
-            <div class="form-group"><label>Senha</label><input type="password" id="reg-senha"
-                    placeholder="Crie uma senha forte"></div>
+            <div class="form-group"><label>Senha</label>
+                <div class="password-field"><input type="password" id="reg-senha"
+                        placeholder="Crie uma senha forte">
+                    <button type="button" class="toggle-senha" onclick="window.toggleSenhaVisibilidade(this)" aria-label="Mostrar senha">
+                        <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
+            </div>
 
             <div class="form-group">
                 <label>Entidade</label>
@@ -678,7 +702,12 @@ run star <html lang="pt-BR">
             </div>
             <div class="form-group">
                 <label>Senha</label>
-                <input type="password" id="cra-admin-senha" placeholder="Crie uma senha temporária">
+                <div class="password-field"><input type="password" id="cra-admin-senha" placeholder="Crie uma senha temporária">
+                    <button type="button" class="toggle-senha" onclick="window.toggleSenhaVisibilidade(this)" aria-label="Mostrar senha">
+                        <svg class="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                        <svg class="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
             </div>
             <div class="form-group">
                 <label>CRA</label>

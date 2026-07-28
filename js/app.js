@@ -277,6 +277,15 @@ window.salvarNovoItemSwot = async function() {
     window.fecharModalSwot();
 };
 
+window.toggleSenhaVisibilidade = function (btn) {
+    const input = btn.previousElementSibling;
+    if (!input) return;
+    const mostrando = input.type === 'text';
+    input.type = mostrando ? 'password' : 'text';
+    btn.classList.toggle('senha-visivel', !mostrando);
+    btn.setAttribute('aria-label', mostrando ? 'Mostrar senha' : 'Ocultar senha');
+};
+
 window.toggleAuthScreens = function () {
     const loginView = document.getElementById('form-login-view');
     const regView = document.getElementById('form-register-view');

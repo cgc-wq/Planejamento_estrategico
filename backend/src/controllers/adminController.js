@@ -2,26 +2,56 @@ const { pool } = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 exports.listarSolicitacoes = async (req, res) => {
-  if (req.user.email !== process.env.ADMIN_EMAIL) return res.status(403).json({ message: 'Acesso negado' });
-  const result = await pool.query(`
-    SELECT s.*, u.nome as usuario_nome, p.nome as projeto_nome_original 
-    FROM solicitacoes s 
-    JOIN usuarios u ON s.usuario_id = u.id 
+  const isGlobalAdmin = req.user.email === process.env.ADMIN_EMAIL;
+  const isCraAdmin = req.user.role === 'cra_admin';
+  const craScope = req.user.cra_admin_scope || '';
+
+  if (!isGlobalAdmin && !isCraAdmin) return res.status(403).json({ message: 'Acesso negado' });
+  if (isCraAdmin && !craScope) return res.status(403).json({ message: 'Escopo do CRA não configurado' });
+
+  let query = `
+    SELECT s.*, u.nome as usuario_nome, p.nome as projeto_nome_original
+    FROM solicitacoes s
+    JOIN usuarios u ON s.usuario_id = u.id
     LEFT JOIN projetos p ON s.projeto_id = p.id
     WHERE s.status = 'pendente'
-    ORDER BY s.criado_em DESC
-  `);
+  `;
+  const params = [];
+
+  if (isCraAdmin) {
+    query += ' AND u.entidade = $1';
+    params.push(craScope);
+  }
+
+  query += ' ORDER BY s.criado_em DESC';
+
+  const result = await pool.query(query, params);
   res.json(result.rows);
 };
 
 exports.aprovarSolicitacao = async (req, res) => {
-  if (req.user.email !== process.env.ADMIN_EMAIL) return res.status(403).json({ message: 'Acesso negado' });
+  const isGlobalAdmin = req.user.email === process.env.ADMIN_EMAIL;
+  const isCraAdmin = req.user.role === 'cra_admin';
+  const craScope = req.user.cra_admin_scope || '';
+
+  if (!isGlobalAdmin && !isCraAdmin) return res.status(403).json({ message: 'Acesso negado' });
+  if (isCraAdmin && !craScope) return res.status(403).json({ message: 'Escopo do CRA não configurado' });
+
   const { id } = req.params;
 
-  const solResult = await pool.query('SELECT * FROM solicitacoes WHERE id = $1', [id]);
+  const solResult = await pool.query(`
+    SELECT s.*, u.entidade as usuario_entidade
+    FROM solicitacoes s
+    JOIN usuarios u ON s.usuario_id = u.id
+    WHERE s.id = $1
+  `, [id]);
   if (solResult.rows.length === 0) return res.status(404).json({ message: 'Solicitação não encontrada' });
 
   const sol = solResult.rows[0];
+  if (isCraAdmin && sol.usuario_entidade !== craScope) {
+    return res.status(403).json({ message: 'Você só pode aprovar solicitações do seu CRA' });
+  }
+
   const data = sol.dados;
 
   if (sol.tipo === 'CRIACAO') {
@@ -41,8 +71,28 @@ exports.aprovarSolicitacao = async (req, res) => {
 };
 
 exports.rejeitarSolicitacao = async (req, res) => {
-  if (req.user.email !== process.env.ADMIN_EMAIL) return res.status(403).json({ message: 'Acesso negado' });
+  const isGlobalAdmin = req.user.email === process.env.ADMIN_EMAIL;
+  const isCraAdmin = req.user.role === 'cra_admin';
+  const craScope = req.user.cra_admin_scope || '';
+
+  if (!isGlobalAdmin && !isCraAdmin) return res.status(403).json({ message: 'Acesso negado' });
+  if (isCraAdmin && !craScope) return res.status(403).json({ message: 'Escopo do CRA não configurado' });
+
   const { id } = req.params;
+
+  if (isCraAdmin) {
+    const solResult = await pool.query(`
+      SELECT u.entidade as usuario_entidade
+      FROM solicitacoes s
+      JOIN usuarios u ON s.usuario_id = u.id
+      WHERE s.id = $1
+    `, [id]);
+    if (solResult.rows.length === 0) return res.status(404).json({ message: 'Solicitação não encontrada' });
+    if (solResult.rows[0].usuario_entidade !== craScope) {
+      return res.status(403).json({ message: 'Você só pode rejeitar solicitações do seu CRA' });
+    }
+  }
+
   await pool.query("UPDATE solicitacoes SET status = 'rejeitado' WHERE id = $1", [id]);
   res.json({ message: 'Solicitação rejeitada' });
 };
