@@ -79,6 +79,11 @@ export async function fazerLogout() {
         btn.textContent = 'Entrar';
     }
 
+    const emailInput = document.getElementById('login-email');
+    const senhaInput = document.getElementById('login-senha');
+    if (emailInput) emailInput.value = '';
+    if (senhaInput) senhaInput.value = '';
+
     window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
 }
 
