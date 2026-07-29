@@ -147,7 +147,7 @@ export function recalcularExecucao(projeto) {
 
 export function salvarAcao() {
     // Limpa marcações de erro anteriores
-    ['m-nome', 'm-prazo', 'm-indicador-nome', 'm-meta-num', 'm-res-num', 'm-meta-data', 'm-res-data']
+    ['m-nome', 'm-prazo', 'm-indicador-nome', 'm-meta-num', 'm-res-num', 'm-meta-data', 'm-res-data', 'm-meta-quali']
         .forEach(elId => document.getElementById(elId)?.classList.remove('campo-invalido'));
 
     const nome = document.getElementById('m-nome').value.trim();
@@ -168,9 +168,10 @@ export function salvarAcao() {
         if (resNum === '' || resNum === null) camposInvalidos.push({ id: 'm-res-num', msg: 'Informe o resultado atual' });
     } else if (indTipoCheck === 'data') {
         const metaData = document.getElementById('m-meta-data').value;
-        const resData = document.getElementById('m-res-data').value;
         if (!metaData) camposInvalidos.push({ id: 'm-meta-data', msg: 'Informe a data-meta (limite/prometida)' });
-        if (!resData) camposInvalidos.push({ id: 'm-res-data', msg: 'Informe a data-resultado (realizada)' });
+    } else if (indTipoCheck === 'qualitativo') {
+        const metaQuali = document.getElementById('m-meta-quali').value.trim();
+        if (!metaQuali) camposInvalidos.push({ id: 'm-meta-quali', msg: 'Informe a descrição da meta esperada' });
     }
 
     if (camposInvalidos.length > 0) {
@@ -458,9 +459,16 @@ export function renderAcoes() {
         <div class="pb-meta-item"><label style="color:var(--azul-mid);">Resultado Alcançado</label><div style="display:flex; gap:6px;"><input type="number" id="res-inline-${a.id}" value="${a.resultado !== null ? a.resultado : ''}" style="border:1px solid var(--azul-mid); width:70px; font-size:11px; padding:4px;"><button class="btn btn-primary btn-sm" onclick="window.updateIndicadorInteligente('${a.id}')">Salvar</button></div></div>
       `;
         } else if (iType === 'data') {
+            let statusPrazoHtml = '';
+            if (a.resultado_data && a.meta_data) {
+                const noPrazo = a.resultado_data <= a.meta_data;
+                statusPrazoHtml = noPrazo
+                    ? `<span style="display:inline-block; margin-top:4px; font-size:10px; font-weight:800; color:#1BA05B; background:#E6F7EE; padding:2px 6px; border-radius:4px;">✅ No prazo</span>`
+                    : `<span style="display:inline-block; margin-top:4px; font-size:10px; font-weight:800; color:#C0392B; background:#FDEDEC; padding:2px 6px; border-radius:4px;">⚠️ Atrasado</span>`;
+            }
             blocoMetaHtml = `
         <div class="pb-meta-item"><label>Data Prometida</label><div style="font-size:12px;font-weight:700;padding:6px 0;">${formatDate(a.meta_data) || '—'}</div></div>
-        <div class="pb-meta-item"><label style="color:var(--azul-mid);">Data de Conclusão</label><div style="display:flex; gap:6px;"><input type="date" id="res-inline-${a.id}" value="${a.resultado_data || ''}" style="border:1px solid var(--azul-mid); font-size:11px; padding:4px;"><button class="btn btn-primary btn-sm" onclick="window.updateIndicadorInteligente('${a.id}')">Salvar</button></div></div>
+        <div class="pb-meta-item"><label style="color:var(--azul-mid);">Data de Conclusão</label><div style="display:flex; gap:6px;"><input type="date" id="res-inline-${a.id}" value="${a.resultado_data || ''}" style="border:1px solid var(--azul-mid); font-size:11px; padding:4px;"><button class="btn btn-primary btn-sm" onclick="window.updateIndicadorInteligente('${a.id}')">Salvar</button></div>${statusPrazoHtml}</div>
       `;
         } else if (iType === 'qualitativo') {
             blocoMetaHtml = `
