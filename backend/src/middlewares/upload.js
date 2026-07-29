@@ -15,8 +15,8 @@ if (!fs.existsSync(uploadDir)) {
 // resposta pela EXTENSÃO do arquivo, então validar só o mimetype declarado
 // deixaria passar arquivos .svg/.html capazes de rodar script quando abertos
 // direto pela URL de /uploads (stored XSS).
-const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx'];
-const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+const ALLOWED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
 
 // Remove separadores de caminho e ".." do nome original antes de usá-lo — o
 // multer não sanitiza travessia de diretório em file.originalname por conta própria.
