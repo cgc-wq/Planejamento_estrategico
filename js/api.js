@@ -72,6 +72,13 @@ export async function fazerLogin() {
 export async function fazerLogout() {
     localStorage.removeItem('pes_token');
     localStorage.removeItem('pes_user');
+
+    const btn = document.getElementById('btn-login');
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Entrar';
+    }
+
     window.dispatchEvent(new CustomEvent('auth-changed', { detail: null }));
 }
 
