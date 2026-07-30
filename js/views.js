@@ -225,12 +225,6 @@ export function renderMapa() {
               <div class="objetivo-card-bsc" style="border-top: 5px solid ${p.cor}; background:${p.bg};">
                 <div class="objetivo-card-header" style="justify-content:space-between; align-items:flex-start;">
                    <span class="objetivo-card-title" style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--texto); line-height:1.4;">${obj.id} — ${window.escapeHTML(obj.nome)}</span>
-                   <div style="display:flex; gap:6px; flex-shrink:0; align-items: center;">
-                      ${obj.ods.map(o => {
-                const n = o.replace(/\D/g, '').padStart(2, '0');
-                return `<img src="./assets/ods/sdg_icon_${n}.png" alt="${o}" title="${o}" style="width:34px; height:34px; border-radius:4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
-            }).join('')}
-                   </div>
                 </div>
               </div>`;
         });
