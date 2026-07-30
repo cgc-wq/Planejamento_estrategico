@@ -3,19 +3,22 @@ require('dotenv').config();
 
 const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
 
+// Relay interno (ex: liberado por IP na rede da entidade) não tem usuário/senha
+// — só configura auth no transporte quando as duas credenciais existem, senão
+// o nodemailer tentaria autenticar num servidor que não suporta AUTH e falharia.
+const temCredenciais = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: smtpPort,
   secure: smtpPort === 465, // 465 = SSL implícito; 587/25 = STARTTLS (secure: false, upgrade automático)
-  auth: {
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-  },
+  ...(temCredenciais ? { auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } } : {}),
 });
 
 // Único ponto de verdade sobre "o envio de e-mail está configurado?" — usado
 // pelo authController para decidir entre enviar de verdade ou (só em dev) logar no console.
-const isEmailConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+// Basta ter host: relay anônimo (sem SMTP_USER/SMTP_PASS) é uma configuração válida.
+const isEmailConfigured = Boolean(process.env.SMTP_HOST);
 
 // Remetente exibido em todo e-mail enviado pela aplicação — único ponto de
 // configuração, para não espalhar "Sistema PES 2026" <noreply@...> pelo código.
@@ -35,7 +38,7 @@ if (isEmailConfigured) {
     }
   });
 } else {
-  console.warn('[MAILER] SMTP_HOST/SMTP_USER/SMTP_PASS não configurados — e-mails NÃO serão enviados de verdade.');
+  console.warn('[MAILER] SMTP_HOST não configurado — e-mails NÃO serão enviados de verdade.');
 }
 
 module.exports = { transporter, isEmailConfigured, mailFrom, mailFromName };
