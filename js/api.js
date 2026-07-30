@@ -1,6 +1,7 @@
 // js/api.js
 import { state, PERSPECTIVAS, INSTITUCIONAL } from './data.js';
 import { showToast } from './utils.js';
+import { recalcularExecucao } from './acoes.js';
 
 const API_URL = `${window.location.origin}/api`;
 
@@ -629,6 +630,7 @@ export async function handleFileUpload(event) {
             };
         }
 
+        recalcularExecucao(a);
         await atualizarInlineFirestore(a);
         showToast('✅ Arquivo enviado com sucesso!');
     } catch (e) {

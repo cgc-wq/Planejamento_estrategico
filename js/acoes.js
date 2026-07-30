@@ -144,6 +144,16 @@ export function updateObjetivos() {
 // =====================================
 // SALVAMENTO E CÁLCULO DE PROGRESSO
 // =====================================
+function totalCiclosPorFrequencia(freq) {
+    switch (freq) {
+        case 'trimestral': return 4;
+        case 'semestral': return 2;
+        case 'bimestral': return 6;
+        case 'anual': return 1;
+        default: return 12; // mensal
+    }
+}
+
 export function recalcularExecucao(projeto) {
     const t = projeto.indicador_tipo || 'numerico';
     let pct = 0;
@@ -161,6 +171,10 @@ export function recalcularExecucao(projeto) {
     if (pct === 0 && projeto.tipo === 'projeto' && projeto.acoes_execucao && projeto.acoes_execucao.length > 0) {
         const concluidas = projeto.acoes_execucao.filter(s => s.status === 'concluido').length;
         pct = Math.round((concluidas / projeto.acoes_execucao.length) * 100);
+    } else if (pct === 0 && projeto.tipo !== 'projeto' && projeto.entregas_periodicas) {
+        const totalCiclos = totalCiclosPorFrequencia(projeto.frequencia);
+        const entregues = Object.keys(projeto.entregas_periodicas).length;
+        if (totalCiclos > 0) pct = Math.round((entregues / totalCiclos) * 100);
     }
 
     projeto.execucao = pct;
@@ -184,9 +198,7 @@ export function salvarAcao() {
 
     if (indTipoCheck === 'numerico') {
         const metaNum = document.getElementById('m-meta-num').value;
-        const resNum = document.getElementById('m-res-num').value;
         if (metaNum === '' || metaNum === null) camposInvalidos.push({ id: 'm-meta-num', msg: 'Informe a meta numérica' });
-        if (resNum === '' || resNum === null) camposInvalidos.push({ id: 'm-res-num', msg: 'Informe o resultado atual' });
     } else if (indTipoCheck === 'data') {
         const metaData = document.getElementById('m-meta-data').value;
         if (!metaData) camposInvalidos.push({ id: 'm-meta-data', msg: 'Informe a data-meta (limite/prometida)' });
