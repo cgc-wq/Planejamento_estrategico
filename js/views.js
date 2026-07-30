@@ -1,4 +1,4 @@
-import { state, ADMIN_EMAIL, PERSPECTIVAS, SWOT_DATA, STATUS_CHIPS, STATUS_LABELS } from './data.js';
+import { state, ADMIN_EMAIL, PERSPECTIVAS, INSTITUCIONAL, SWOT_DATA, STATUS_CHIPS, STATUS_LABELS } from './data.js';
 import { escapeHTML } from './utils.js';
 
 // Mesmo padrão de "Tipo de Indicador" já usado no modal de Ações
@@ -159,28 +159,42 @@ export function renderMapa() {
     const container = document.getElementById('mapa-content');
     if (!container) return;
 
+    const isAdmin = (state.currentUser && state.currentUser.email === ADMIN_EMAIL);
+    const editBtn = (chave, valor, titulo) => isAdmin
+        ? `<button class="btn-edit-nome" title="${titulo}" onclick="window.iniciarEdicaoInstitucional('${chave}', '${escapeHTML(valor).replace(/'/g, "\\'")}', this)">✏️</button>`
+        : '';
+
     // 1. Estrutura do Cabeçalho CFA (Missão, Visão, Valores) Centralizada
     let html = `
     <div class="bsc-mapa">
       <div class="bsc-header-institucional">
          <div style="width: 150px; height: 100px; background: var(--azul-cfa); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; margin-bottom: 16px; text-transform:uppercase;">Sistema CFA/CRAs</div>
-         
+
          <div class="card p-cfa" style="border-top: 4px solid var(--azul-cfa); padding: 24px; max-width: 600px; margin-bottom: 20px;">
            <div class="bsc-institucional-label" style="font-size: 14px; font-weight: 800; color:var(--azul-cfa); text-transform:uppercase; margin-bottom:10px;">Missão Sistema CFA/CRAs</div>
-           <p style="font-size: 13px; font-weight: 500; line-height:1.6;">"fiscalizar, valorizar e promover o exercício do profissional de administração, contribuindo com o desenvolvimento do país."</p>
+           <div style="display:flex; align-items:flex-start; gap:8px;">
+             <p style="font-size: 13px; font-weight: 500; line-height:1.6; flex:1; margin:0;">"${escapeHTML(INSTITUCIONAL.missao)}"</p>
+             ${editBtn('missao', INSTITUCIONAL.missao, 'Editar Missão')}
+           </div>
          </div>
 
          <div class="bsc-institucional-cards" style="width: 100%; max-width: 1000px;">
            <div class="card p-cfa" style="border-top: 4px solid var(--azul-mid); flex:1; border-color:#6B3FA0;">
              <div class="bsc-institucional-label" style="font-size:12px;font-weight:700;color:#6B3FA0;text-transform:uppercase;margin-bottom:6px;">Visão</div>
-             <p style="font-size: 12px;">"ser uma entidade reconhecida pela sociedade, capaz de assegurar a atuação plena dos profissionais de administração."</p>
+             <div style="display:flex; align-items:flex-start; gap:8px;">
+               <p style="font-size: 12px; flex:1; margin:0;">"${escapeHTML(INSTITUCIONAL.visao)}"</p>
+               ${editBtn('visao', INSTITUCIONAL.visao, 'Editar Visão')}
+             </div>
            </div>
            <div class="card p-cfa" style="border-top: 4px solid var(--amarelo); flex:1;">
              <div class="bsc-institucional-label" style="font-size:12px;font-weight:700;color:#E67E22;text-transform:uppercase;margin-bottom:6px;">Valores</div>
-             <p style="font-size: 12px;">Ética, Inovação, Valorização da profissão, Sustentabilidade e Transparência.</p>
+             <div style="display:flex; align-items:flex-start; gap:8px;">
+               <p style="font-size: 12px; flex:1; margin:0;">${escapeHTML(INSTITUCIONAL.valores)}</p>
+               ${editBtn('valores', INSTITUCIONAL.valores, 'Editar Valores')}
+             </div>
            </div>
          </div>
-         
+
          <div class="bsc-conector-central"></div>
       </div>
 

@@ -68,6 +68,7 @@ window.removerAnexoModal = acoes.removerAnexoModal;
 window.renderObjetivosEstrategicos = views.renderObjetivosEstrategicos;
 window.renderMapa = views.renderMapa;
 window.renderIndicadores = views.renderIndicadores;
+window.preencherFiltroPerspectivas = acoes.preencherFiltroPerspectivas;
 window.renderSWOT = views.renderSWOT;
 window.renderRelatorio = views.renderRelatorio;
 window.updateDashboard = dashboard.updateDashboard;
@@ -136,6 +137,49 @@ window.salvarEdicaoNome = async function(chave) {
 window.cancelarEdicaoNome = function() {
     // Simplesmente re-renderiza a tela de objetivos
     if (window.renderObjetivosEstrategicos) window.renderObjetivosEstrategicos();
+};
+
+// ==========================================
+// EDIÇÃO DE MISSÃO / VISÃO / VALORES
+// ==========================================
+
+window.iniciarEdicaoInstitucional = function (chave, valorAtual, btnEl) {
+    const parentDiv = btnEl.parentElement;
+
+    parentDiv.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:8px; width:100%;">
+            <textarea id="edit-inst-${chave}"
+                      class="input-edit-nome"
+                      style="width:100%; min-height:70px; padding:8px 10px; border:2px solid var(--azul-cfa); border-radius:8px; font-family:'Sora',sans-serif; font-size:13px; outline:none; resize:vertical;">${valorAtual}</textarea>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-primary btn-sm" style="font-size:11px; padding:4px 10px;" onclick="window.salvarEdicaoInstitucional('${chave}')">✓ Salvar</button>
+                <button class="btn btn-sm" style="font-size:11px; padding:4px 10px; background:#f0f0f0; border:1px solid var(--cinza-borda); border-radius:6px; cursor:pointer;" onclick="window.cancelarEdicaoInstitucional()">✕ Cancelar</button>
+            </div>
+        </div>
+    `;
+
+    const textarea = document.getElementById(`edit-inst-${chave}`);
+    if (textarea) {
+        textarea.focus();
+        textarea.select();
+    }
+};
+
+window.salvarEdicaoInstitucional = async function (chave) {
+    const textarea = document.getElementById(`edit-inst-${chave}`);
+    if (!textarea) return;
+
+    const novoTexto = textarea.value.trim();
+    if (!novoTexto) {
+        window.showToast('⚠️ O texto não pode ficar vazio.');
+        return;
+    }
+
+    await window.salvarNomeCustom(`inst_${chave}`, novoTexto);
+};
+
+window.cancelarEdicaoInstitucional = function () {
+    if (window.renderMapa) window.renderMapa();
 };
 
 // ==========================================
@@ -660,6 +704,7 @@ window.addEventListener('auth-changed', async (e) => {
 document.addEventListener('DOMContentLoaded', () => {
     views.renderMapa();
     views.renderSWOT();
+    acoes.preencherFiltroPerspectivas();
     document.getElementById('m-perspectiva').addEventListener('change', acoes.updateObjetivos);
 
     // Verifica se há token de redefinição de senha na URL

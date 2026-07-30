@@ -1,5 +1,5 @@
 // js/api.js
-import { state, PERSPECTIVAS } from './data.js';
+import { state, PERSPECTIVAS, INSTITUCIONAL } from './data.js';
 import { showToast } from './utils.js';
 
 const API_URL = `${window.location.origin}/api`;
@@ -780,11 +780,21 @@ export async function carregarNomesCustom() {
             });
         });
 
+        // Aplica Missão/Visão/Valores customizados em memória
+        ['missao', 'visao', 'valores'].forEach(chave => {
+            const chaveInst = `inst_${chave}`;
+            if (mapa[chaveInst]) {
+                INSTITUCIONAL[chave] = mapa[chaveInst];
+            }
+        });
+
         // Re-renderiza as views que usam esses nomes
         if (window.renderObjetivosEstrategicos) window.renderObjetivosEstrategicos();
         if (window.renderMapa) window.renderMapa();
         if (window.renderIndicadores) window.renderIndicadores();
         if (window.updateDashboard) window.updateDashboard();
+        if (window.preencherFiltroPerspectivas) window.preencherFiltroPerspectivas();
+        if (window.renderAcoes) window.renderAcoes();
     } catch (e) {
         console.error('[NomesCustom] Erro ao carregar:', e);
     }

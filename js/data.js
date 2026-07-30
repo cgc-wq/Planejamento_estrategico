@@ -56,6 +56,15 @@ export const PERSPECTIVAS = {
     }
 };
 
+// Mutado em memória por carregarNomesCustom() (js/api.js), mesmo mecanismo
+// usado para nomes de perspectivas/objetivos — chaves 'inst_missao',
+// 'inst_visao', 'inst_valores' na tabela perspectivas_custom.
+export const INSTITUCIONAL = {
+    missao: 'Fiscalizar, valorizar e promover o exercício do profissional de Administração, contribuindo com o desenvolvimento do país.',
+    visao: 'Ser uma entidade reconhecida pela sociedade, capaz de assegurar a atuação plena dos profissionais de administração.',
+    valores: 'Ética, Inovação, Valorização da profissão, Sustentabilidade e Transparência.'
+};
+
 export const SWOT_DATA = {
     forcas: ['Sistema bem estruturado', 'Padronização de normas operacionais', 'Bom número de registrados', 'Diversidade de segmentos de atuação', 'Sistema Eletrônico de Informações (SEI)', 'Serviços on-line', 'Academia Corporativa da Administração', 'Capilaridade nacional', 'Sustentabilidade financeira'],
     fraquezas: ['Concorrência com outras profissões', 'Marketshare baixo', 'Identidade profissional fraca', 'Deficiência em treinamento', 'Baixa integração entre os Regionais', 'Falta de articulação política', 'Baixa fiscalização profissional'],

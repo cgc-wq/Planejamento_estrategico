@@ -16,6 +16,25 @@ export function toggleIndicadorCampos() {
     document.getElementById('box-ind-quali').style.display = t === 'qualitativo' ? 'grid' : 'none';
 }
 
+function preencherSelectPerspectivas() {
+    const select = document.getElementById('m-perspectiva');
+    if (!select) return;
+    select.innerHTML = Object.entries(PERSPECTIVAS)
+        .map(([key, p]) => `<option value="${key}">${escapeHTML(p.nome)}</option>`)
+        .join('');
+}
+
+export function preencherFiltroPerspectivas() {
+    const select = document.getElementById('filtro-perspectiva');
+    if (!select) return;
+    const valorAtual = select.value;
+    select.innerHTML = '<option value="">Todas as perspectivas</option>' +
+        Object.entries(PERSPECTIVAS)
+            .map(([key, p]) => `<option value="${key}">${escapeHTML(p.nome)}</option>`)
+            .join('');
+    select.value = valorAtual;
+}
+
 export function openModal(id = null) {
     state.editingId = id;
     const m = (elId) => document.getElementById(elId);
@@ -24,6 +43,8 @@ export function openModal(id = null) {
 
     ['m-nome', 'm-prazo', 'm-indicador-nome', 'm-meta-num', 'm-res-num', 'm-meta-data', 'm-res-data']
         .forEach(elId => document.getElementById(elId)?.classList.remove('campo-invalido'));
+
+    preencherSelectPerspectivas();
 
     if (id) {
         const a = state.acoes.find(x => x.id === id);

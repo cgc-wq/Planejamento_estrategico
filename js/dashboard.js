@@ -1,4 +1,4 @@
-import { state, PERSPECTIVAS } from './data.js';
+import { state, PERSPECTIVAS, INSTITUCIONAL } from './data.js';
 import { animateCounter, escapeHTML } from './utils.js';
 
 let filtroPerspectivaAtual = '';
@@ -7,6 +7,9 @@ export function updateDashboard() {
     const total = state.acoes.length;
     const concluidas = state.acoes.filter(a => a.status === 'concluido').length;
     const pct = total > 0 ? Math.round(state.acoes.reduce((s, a) => s + (a.execucao || 0), 0) / total) : 0;
+
+    const heroMissaoEl = document.getElementById('hero-missao-text');
+    if (heroMissaoEl) heroMissaoEl.textContent = INSTITUCIONAL.missao;
 
     animateCounter('stat-total-acoes', total);
     animateCounter('stat-concluidas', concluidas);

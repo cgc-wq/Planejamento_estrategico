@@ -257,8 +257,8 @@
             <div class="hero-strip">
                 <div class="hero-text">
                     <h2>Sistema CFA/CRAs</h2>
-                    <p>Missão: Fiscalizar, valorizar e promover o exercício do profissional de Administração,
-                        contribuindo com o desenvolvimento do país.</p>
+                    <p>Missão: <span id="hero-missao-text">Fiscalizar, valorizar e promover o exercício do profissional de Administração,
+                        contribuindo com o desenvolvimento do país.</span></p>
                 </div>
                 <div class="hero-stats">
                     <div class="hero-stat">
@@ -368,10 +368,6 @@
                     </div><select id="filtro-perspectiva" onchange="window.renderAcoes()"
                         style="border:1px solid var(--cinza-borda); border-radius:8px; padding:9px 12px; font-size:13px; font-family:'Sora',sans-serif; background:white; color:var(--texto);">
                         <option value="">Todas as perspectivas</option>
-                        <option value="financeiro">Financeira / Sust. Econômica</option>
-                        <option value="clientes">Clientes</option>
-                        <option value="processos">Desenvolvimento Institucional</option>
-                        <option value="sustentabilidade">Sustentabilidade Social e Ambiental</option>
                     </select><select id="filtro-status" onchange="window.renderAcoes()"
                         style="border:1px solid var(--cinza-borda); border-radius:8px; padding:9px 12px; font-size:13px; font-family:'Sora',sans-serif; background:white; color:var(--texto);">
                         <option value="">Todos os status</option>
@@ -531,7 +527,7 @@
             <div class="topbar">
                 <div class="topbar-left">
                     <h1>Análise SWOT</h1>
-                    <p>Diagnóstico do ambiente interno e externo do Sistema CFA/CRAs — extraído do PES 2023-2026</p>
+                    <p>Diagnóstico do ambiente interno e externo do Sistema CFA/CRAs — extraído do PES 2026-2029</p>
                 </div>
             </div>
             <div class="swot-grid">
@@ -774,12 +770,7 @@
 
             <div class="grid-2">
                 <div class="form-group"><label>Perspectiva Estratégica *</label><select id="m-perspectiva"
-                        onchange="window.updateObjetivos()">
-                        <option value="sustentabilidade">Sustentabilidade Social e Ambiental</option>
-                        <option value="processos">Desenvolvimento Institucional</option>
-                        <option value="clientes">Clientes</option>
-                        <option value="financeiro">Financeira / Sust. Econômica</option>
-                    </select></div>
+                        onchange="window.updateObjetivos()"></select></div>
                 <div class="form-group"><label>Objetivo Estratégico *</label><select id="m-objetivo"></select></div>
             </div>
 
