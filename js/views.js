@@ -179,7 +179,7 @@ export function renderMapa() {
          </div>
 
          <div class="bsc-institucional-cards" style="width: 100%; max-width: 1000px;">
-           <div class="card p-cfa" style="border-top: 4px solid var(--azul-mid); flex:1; border-color:#6B3FA0;">
+           <div class="card p-cfa" style="border-top: 4px solid var(--azul-mid); flex:1;">
              <div class="bsc-institucional-label" style="font-size:12px;font-weight:700;color:#6B3FA0;text-transform:uppercase;margin-bottom:6px;">Visão</div>
              <div style="display:flex; align-items:flex-start; gap:8px;">
                <p style="font-size: 12px; flex:1; margin:0;">"${escapeHTML(INSTITUCIONAL.visao)}"</p>
