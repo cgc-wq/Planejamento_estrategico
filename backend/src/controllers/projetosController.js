@@ -75,11 +75,23 @@ exports.listarProjetos = async (req, res) => {
 };
 
 exports.listarTodosProjetos = async (req, res) => {
-  const result = await pool.query(`
-    SELECT p.*, 
-    EXISTS (SELECT 1 FROM solicitacoes s WHERE s.projeto_id = p.id AND s.status = 'pendente') as tem_pendencia 
+  // Alimenta o diagnóstico/análise do Dashboard e a aba Indicadores. Só o
+  // Admin Master (grupo === 'ADMIN') enxerga a visão consolidada de todas as
+  // entidades — qualquer outro usuário (inclusive cra_admin) vê só a própria,
+  // mesmo filtro já aplicado em listarProjetos.
+  let query = `
+    SELECT p.*,
+    EXISTS (SELECT 1 FROM solicitacoes s WHERE s.projeto_id = p.id AND s.status = 'pendente') as tem_pendencia
     FROM projetos p
-  `);
+  `;
+  let params = [];
+
+  if (req.user.grupo !== 'ADMIN') {
+    query += ' WHERE p.unidade = $1';
+    params.push(req.user.grupo);
+  }
+
+  const result = await pool.query(query, params);
   res.json(result.rows);
 };
 
