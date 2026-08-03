@@ -904,6 +904,38 @@ body {
     box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.12);
 }
 
+.senha-criterios {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+}
+
+.senha-criterios .criterio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--texto-sec);
+    transition: color 0.2s;
+}
+
+.senha-criterios .criterio::before {
+    content: "○";
+    font-size: 9px;
+    color: var(--cinza-borda);
+}
+
+.senha-criterios .criterio.ok {
+    color: var(--verde);
+    font-weight: 700;
+}
+
+.senha-criterios .criterio.ok::before {
+    content: "✓";
+    color: var(--verde);
+}
+
 .password-field {
     position: relative;
 }

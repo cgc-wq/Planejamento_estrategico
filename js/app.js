@@ -13,6 +13,28 @@ import * as views from './views.js';
 window.state = state;
 
 // ==========================================
+// CHECKLIST VISUAL DE CRITÉRIOS DE SENHA
+// ==========================================
+// Espera um <div class="senha-criterios" id="{inputId}-criterios"> com spans
+// data-check="length|letra|numero|especial" logo após o campo de senha.
+window.atualizarCriteriosSenha = function (input) {
+    const container = document.getElementById(input.id + '-criterios');
+    if (!container) return;
+
+    const senha = input.value;
+    const checks = {
+        length: senha.length >= 8,
+        letra: /[a-zA-Z]/.test(senha),
+        numero: /[0-9]/.test(senha),
+        especial: /[^a-zA-Z0-9]/.test(senha)
+    };
+
+    container.querySelectorAll('[data-check]').forEach(el => {
+        el.classList.toggle('ok', Boolean(checks[el.dataset.check]));
+    });
+};
+
+// ==========================================
 // MODAL DE CONFIRMAÇÃO (substitui window.confirm() nativo)
 // ==========================================
 let confirmCallbackPendente = null;
@@ -456,6 +478,12 @@ window.redefinirNovaSenha = async function () {
         return;
     }
 
+    const erroSenha = utils.validarSenha(senha);
+    if (erroSenha) {
+        window.showToast('⚠️ ' + erroSenha);
+        return;
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
 
@@ -546,6 +574,12 @@ window.salvarCraAdmin = async function () {
 
     if (!dados.nome || !dados.email || !dados.senha || !dados.entidade) {
         window.showToast('⚠️ Preencha todos os campos do administrador do CRA.');
+        return;
+    }
+
+    const erroSenha = utils.validarSenha(dados.senha);
+    if (erroSenha) {
+        window.showToast('⚠️ ' + erroSenha);
         return;
     }
 

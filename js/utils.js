@@ -9,6 +9,25 @@ export function escapeHTML(str) {
     );
 }
 
+// Espelha a política de senha do backend (backend/src/utils/validarSenha.js)
+// só para dar feedback imediato sem round-trip — o backend é quem de fato
+// garante a regra, esta cópia é só conveniência de UX.
+export function validarSenha(senha) {
+    if (!senha || senha.length < 8) {
+        return 'A senha deve ter no mínimo 8 caracteres.';
+    }
+    if (!/[a-zA-Z]/.test(senha)) {
+        return 'A senha deve conter pelo menos uma letra.';
+    }
+    if (!/[0-9]/.test(senha)) {
+        return 'A senha deve conter pelo menos um número.';
+    }
+    if (!/[^a-zA-Z0-9]/.test(senha)) {
+        return 'A senha deve conter pelo menos um caractere especial (ex: !@#$%&*).';
+    }
+    return null;
+}
+
 export function formatDate(d) {
     if (!d) return '';
     const parts = d.split('-');

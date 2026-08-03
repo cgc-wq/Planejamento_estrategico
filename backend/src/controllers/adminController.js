@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { validarSenha } = require('../utils/validarSenha');
 const bcrypt = require('bcryptjs');
 
 exports.listarSolicitacoes = async (req, res) => {
@@ -103,6 +104,11 @@ exports.criarCraAdmin = async (req, res) => {
   const { nome, email, senha, entidade } = req.body;
   if (!nome || !email || !senha || !entidade) {
     return res.status(400).json({ message: 'Nome, e-mail, senha e CRA são obrigatórios' });
+  }
+
+  const erroSenha = validarSenha(senha);
+  if (erroSenha) {
+    return res.status(400).json({ message: erroSenha });
   }
 
   const exists = await pool.query('SELECT id FROM usuarios WHERE email = $1', [email]);

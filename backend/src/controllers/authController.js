@@ -1,11 +1,18 @@
 const { pool } = require('../config/db');
 const { sendResetPasswordEmail } = require('../services/emailService');
+const { validarSenha } = require('../utils/validarSenha');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 
 exports.register = async (req, res) => {
   const { nome, email, senha, entidade, setor } = req.body;
+
+  const erroSenha = validarSenha(senha);
+  if (erroSenha) {
+    return res.status(400).json({ message: erroSenha });
+  }
+
   const userExists = await pool.query('SELECT * FROM usuarios WHERE email = $1', [email]);
   if (userExists.rows.length > 0) {
     return res.status(400).json({ message: 'E-mail já cadastrado' });
@@ -123,6 +130,12 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   const { token, senha } = req.body;
+
+  const erroSenha = validarSenha(senha);
+  if (erroSenha) {
+    return res.status(400).json({ message: erroSenha });
+  }
+
   const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
   const result = await pool.query(

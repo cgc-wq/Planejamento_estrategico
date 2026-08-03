@@ -1,6 +1,6 @@
 // js/api.js
 import { state, PERSPECTIVAS, INSTITUCIONAL } from './data.js';
-import { showToast } from './utils.js';
+import { showToast, validarSenha } from './utils.js';
 import { recalcularExecucao } from './acoes.js';
 
 const API_URL = `${window.location.origin}/api`;
@@ -515,6 +515,12 @@ export async function fazerCadastro() {
 
     if (!nome || !email || !senha || !entidade) {
         showToast('⚠️ Preencha todos os campos obrigatórios.');
+        return;
+    }
+
+    const erroSenha = validarSenha(senha);
+    if (erroSenha) {
+        showToast('⚠️ ' + erroSenha);
         return;
     }
 
