@@ -592,6 +592,17 @@
     </main>
 
 
+    <div class="modal-overlay" id="modal-confirm-overlay" onclick="window.fecharModalConfirm(event)">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width: 400px;">
+            <h2 id="modal-confirm-titulo">Confirmar ação</h2>
+            <p id="modal-confirm-mensagem" style="font-size: 13px; color: var(--texto-sec); margin-bottom: 15px;"></p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="window.fecharModalConfirm()">Cancelar</button>
+                <button class="btn btn-danger" id="modal-confirm-btn-ok" onclick="window.confirmarModalConfirm()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modal-justificativa-overlay" onclick="document.getElementById('modal-justificativa-overlay').classList.remove('open')">
         <div class="modal" onclick="event.stopPropagation()" style="max-width: 400px;">
             <h2>Justificativa de Exclusão</h2>

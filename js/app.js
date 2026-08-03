@@ -12,6 +12,35 @@ import * as views from './views.js';
 // ==========================================
 window.state = state;
 
+// ==========================================
+// MODAL DE CONFIRMAÇÃO (substitui window.confirm() nativo)
+// ==========================================
+let confirmCallbackPendente = null;
+
+window.showConfirm = function (mensagem, onConfirm, titulo = 'Confirmar ação') {
+    const overlay = document.getElementById('modal-confirm-overlay');
+    if (!overlay) return;
+
+    document.getElementById('modal-confirm-titulo').textContent = titulo;
+    document.getElementById('modal-confirm-mensagem').textContent = mensagem;
+    confirmCallbackPendente = onConfirm;
+
+    overlay.classList.add('open');
+};
+
+window.fecharModalConfirm = function (event) {
+    if (event && event.target !== document.getElementById('modal-confirm-overlay')) return;
+    document.getElementById('modal-confirm-overlay')?.classList.remove('open');
+    confirmCallbackPendente = null;
+};
+
+window.confirmarModalConfirm = function () {
+    const callback = confirmCallbackPendente;
+    document.getElementById('modal-confirm-overlay')?.classList.remove('open');
+    confirmCallbackPendente = null;
+    if (callback) callback();
+};
+
 // 1. Utilidades e Rotas
 window.escapeHTML = utils.escapeHTML;
 window.formatDate = utils.formatDate;
@@ -225,10 +254,10 @@ window.salvarItemSwotInline = async function(tipoSwot, itemId) {
     await window.salvarItemSwot(tipoSwot, itemId, novoTexto);
 };
 
-window.removerItemSwot = async function(tipoSwot, itemId) {
-    if (confirm('Tem certeza que deseja remover este item?')) {
+window.removerItemSwot = function(tipoSwot, itemId) {
+    window.showConfirm('Tem certeza que deseja remover este item?', async () => {
         await window.deletarItemSwot(tipoSwot, itemId);
-    }
+    });
 };
 
 window.abrirModalSwot = function(tipoSwot = 'forcas') {

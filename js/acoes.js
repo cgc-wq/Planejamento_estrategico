@@ -271,8 +271,9 @@ export function excluirAcao() {
     const isAdmin = state.currentUser && state.currentUser.email === 'cgc@cfa.org.br';
     
     if (isAdmin) {
-        if (!confirm('Confirmar exclusão deste registro permanentemente?')) return;
-        window.excluirNoFirestore(state.editingId);
+        window.showConfirm('Confirmar exclusão deste registro permanentemente?', () => {
+            window.excluirNoFirestore(state.editingId);
+        });
     } else {
         // Para usuários comuns, abre o modal de justificativa
         document.getElementById('m-justificativa-texto').value = '';
@@ -756,11 +757,12 @@ export function triggerFileUpload(projId, acaoIndex) {
 }
 
 export function removerAnexo(projId, acaoIndex) {
-    if (!confirm('Remover o comprovante desta ação?')) return;
-    const a = state.acoes.find(x => x.id === projId);
-    if (a && a.acoes_execucao && a.acoes_execucao[acaoIndex]) {
-        a.acoes_execucao[acaoIndex].anexoUrl = null;
-        a.acoes_execucao[acaoIndex].anexoNome = null;
-        window.atualizarInlineFirestore(a);
-    }
+    window.showConfirm('Remover o comprovante desta ação?', () => {
+        const a = state.acoes.find(x => x.id === projId);
+        if (a && a.acoes_execucao && a.acoes_execucao[acaoIndex]) {
+            a.acoes_execucao[acaoIndex].anexoUrl = null;
+            a.acoes_execucao[acaoIndex].anexoNome = null;
+            window.atualizarInlineFirestore(a);
+        }
+    });
 }
