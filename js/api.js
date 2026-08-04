@@ -1,7 +1,28 @@
 // js/api.js
-import { state, PERSPECTIVAS, INSTITUCIONAL } from './data.js';
+import { state, PERSPECTIVAS, INSTITUCIONAL, DEMO_EMAIL, DEMO_SENHA } from './data.js';
 import { showToast, validarSenha } from './utils.js';
 import { recalcularExecucao } from './acoes.js';
+
+// Usuário de demonstração: autenticado só no cliente, sem token real de
+// backend. Toda função de gravação verifica isDemoUser() e desvia para uma
+// simulação em memória, para que nada do que ele faça chegue ao banco.
+export const isDemoUser = () => Boolean(state.currentUser) && state.currentUser.role === 'demo';
+
+const avisoDemo = () => showToast('🧪 Modo Demonstração: alteração aplicada só nesta sessão, nada foi salvo no banco de dados.');
+
+// Reproduz o mapeamento unidade -> grupo/setor feito em carregarAcoesFirebase,
+// necessário porque no modo demo os registros nunca passam pelo backend.
+const mapearUnidade = (unidade) => {
+    let grupo = unidade;
+    let setor = '';
+    if (unidade && unidade.startsWith('CFA - ')) {
+        grupo = 'CFA';
+        setor = unidade.replace('CFA - ', '');
+    } else if (unidade === 'CFA') {
+        grupo = 'CFA';
+    }
+    return { grupo, setor };
+};
 
 const API_URL = `${window.location.origin}/api`;
 
@@ -42,6 +63,18 @@ export async function fazerLogin() {
     const email = document.getElementById('login-email').value.trim();
     const senha = document.getElementById('login-senha').value;
     const btn = document.getElementById('btn-login');
+
+    if (email.toLowerCase() === DEMO_EMAIL && senha === DEMO_SENHA) {
+        const demoUser = {
+            id: 'demo', nome: 'Visitante', email: DEMO_EMAIL,
+            entidade: '', setor: '', role: 'demo', grupo: 'DEMO', cra_admin_scope: null
+        };
+        localStorage.setItem('pes_token', 'demo-token');
+        localStorage.setItem('pes_user', JSON.stringify(demoUser));
+        sessaoExpiradaAvisada = false;
+        window.dispatchEvent(new CustomEvent('auth-changed', { detail: demoUser }));
+        return;
+    }
 
     btn.disabled = true;
     btn.textContent = 'Entrando...';
@@ -400,6 +433,27 @@ export async function salvarNoFirestore(acaoData, idEditando) {
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
+    if (isDemoUser()) {
+        const { grupo, setor } = mapearUnidade(acaoData.unidade);
+        if (idEditando) {
+            const idx = state.acoes.findIndex(a => a.id === idEditando);
+            if (idx > -1) state.acoes[idx] = { ...state.acoes[idx], ...acaoData, grupo, setor, id: idEditando };
+            const idxTodas = state.todasAcoes.findIndex(a => a.id === idEditando);
+            if (idxTodas > -1) state.todasAcoes[idxTodas] = { ...state.todasAcoes[idxTodas], ...acaoData, grupo, setor, id: idEditando };
+        } else {
+            const novo = { ...acaoData, grupo, setor, id: `demo-${state.acoes.length}-${state.todasAcoes.length}` };
+            state.acoes.push(novo);
+            state.todasAcoes.push(novo);
+        }
+        if (window.renderAcoes) window.renderAcoes();
+        if (window.updateDashboard) window.updateDashboard();
+        avisoDemo();
+        if (window.closeModal) window.closeModal();
+        btn.disabled = false;
+        btn.textContent = 'Salvar Dados';
+        return;
+    }
+
     try {
         const method = idEditando ? 'PUT' : 'POST';
         const url = idEditando ? `${API_URL}/projetos/${idEditando}` : `${API_URL}/projetos`;
@@ -439,6 +493,13 @@ export async function salvarNoFirestore(acaoData, idEditando) {
 // indicador principal, que continuam exigindo aprovação — ver
 // solicitarAlteracaoResultado abaixo).
 export async function atualizarInlineFirestore(acaoData) {
+    if (isDemoUser()) {
+        if (window.renderAcoes) window.renderAcoes();
+        if (window.updateDashboard) window.updateDashboard();
+        avisoDemo();
+        return;
+    }
+
     try {
         const res = await fetch(`${API_URL}/projetos/${acaoData.id}/execucao`, {
             method: 'PUT',
@@ -461,6 +522,13 @@ export async function atualizarInlineFirestore(acaoData) {
 // do Admin Master — usa o mesmo endpoint gated de atualizarProjeto (PUT
 // /projetos/:id), que retorna 202 (pendente) para quem não é admin.
 export async function solicitarAlteracaoResultado(acaoData) {
+    if (isDemoUser()) {
+        if (window.renderAcoes) window.renderAcoes();
+        if (window.updateDashboard) window.updateDashboard();
+        avisoDemo();
+        return;
+    }
+
     try {
         const res = await fetch(`${API_URL}/projetos/${acaoData.id}`, {
             method: 'PUT',
@@ -484,6 +552,16 @@ export async function solicitarAlteracaoResultado(acaoData) {
 }
 
 export async function excluirNoFirestore(id, justificativa = null) {
+    if (isDemoUser()) {
+        state.acoes = state.acoes.filter(a => a.id !== id);
+        state.todasAcoes = state.todasAcoes.filter(a => a.id !== id);
+        if (window.renderAcoes) window.renderAcoes();
+        if (window.updateDashboard) window.updateDashboard();
+        avisoDemo();
+        if (window.closeModal) window.closeModal();
+        return;
+    }
+
     try {
         const res = await fetch(`${API_URL}/projetos/${id}`, {
             method: 'DELETE',
@@ -599,8 +677,40 @@ export async function handleFileUpload(event) {
     const projId = state.uploadProjId;
     if (!projId) return;
 
+    if (isDemoUser()) {
+        const url = URL.createObjectURL(file);
+        const a = state.acoes.find(x => x.id === projId);
+
+        if (a && state.uploadAcaoIndex !== null && state.uploadAcaoIndex !== undefined) {
+            a.acoes_execucao[state.uploadAcaoIndex].anexoUrl = url;
+            a.acoes_execucao[state.uploadAcaoIndex].anexoNome = file.name;
+        } else if (a && state.uploadCicloId) {
+            if (!a.entregas_periodicas) a.entregas_periodicas = {};
+            const cData = state.uploadCicloData || {};
+            a.entregas_periodicas[state.uploadCicloId] = {
+                dataRegistro: new Date().toISOString().split('T')[0],
+                autor: state.currentUser ? state.currentUser.nome : 'Usuário',
+                anexoUrl: url,
+                anexoNome: file.name,
+                resumo: cData.resumo,
+                indicador: cData.indicador,
+                meta: cData.meta,
+                resultado: cData.resultado,
+                custo_tipo: cData.custo_tipo,
+                custo_valor: cData.custo_valor
+            };
+        }
+
+        if (a) { recalcularExecucao(a); await atualizarInlineFirestore(a); }
+        avisoDemo();
+        event.target.value = '';
+        state.uploadAcaoIndex = null;
+        state.uploadCicloId = null;
+        return;
+    }
+
     showToast('⏳ Enviando anexo...');
-    
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -654,6 +764,19 @@ export async function handleModalAnexoUpload(event) {
     if (!file) return;
 
     const status = document.getElementById('modal-anexo-status');
+
+    if (isDemoUser()) {
+        const url = URL.createObjectURL(file);
+        state.modalAnexo = { url, name: file.name };
+        document.getElementById('modal-anexo-nome').textContent = file.name;
+        document.getElementById('modal-anexo-link').href = url;
+        document.getElementById('modal-anexo-preview').style.display = 'flex';
+        document.getElementById('modal-anexo-upload-area').style.display = 'none';
+        avisoDemo();
+        event.target.value = '';
+        return;
+    }
+
     status.textContent = '⏳ Enviando...';
 
     const formData = new FormData();

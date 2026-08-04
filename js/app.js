@@ -714,18 +714,29 @@ window.addEventListener('auth-changed', async (e) => {
         let displayGrupo = user.grupo;
         if (user.role === 'cra_admin' && user.cra_admin_scope) {
             displayGrupo = `Administrador ${user.cra_admin_scope}`;
+        } else if (user.role === 'demo') {
+            displayGrupo = 'Modo Demonstração';
         }
         document.getElementById('user-email-display').textContent = `${user.nome} (${displayGrupo})`;
-        
-        window.showToast('✅ Acesso liberado!');
 
-        // Carrega os dados do backend PostgreSQL
-        api.carregarAcoesFirebase(user.grupo);
-        api.carregarTodasAcoesFirebase();
-        api.carregarObjetivosFirebase();
-        api.carregarResultadosObjetivo();
-        api.carregarNomesCustom();
-        api.carregarItensSwot();
+        if (user.role === 'demo') {
+            // Usuário de demonstração não tem token real de backend: não há o
+            // que buscar no servidor, o sistema começa vazio e tudo que o
+            // visitante criar fica só em memória (ver isDemoUser() em api.js).
+            window.showToast('🧪 Modo Demonstração: navegue e teste à vontade, nada será salvo no banco.');
+            if (window.renderAcoes) window.renderAcoes();
+            if (window.updateDashboard) window.updateDashboard();
+        } else {
+            window.showToast('✅ Acesso liberado!');
+
+            // Carrega os dados do backend PostgreSQL
+            api.carregarAcoesFirebase(user.grupo);
+            api.carregarTodasAcoesFirebase();
+            api.carregarObjetivosFirebase();
+            api.carregarResultadosObjetivo();
+            api.carregarNomesCustom();
+            api.carregarItensSwot();
+        }
 
         const navAdmin = document.getElementById('nav-admin');
         const navIndicadores = document.getElementById('nav-indicadores');

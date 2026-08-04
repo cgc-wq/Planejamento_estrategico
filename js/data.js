@@ -2,6 +2,13 @@
 
 export const ADMIN_EMAIL = 'cgc@cfa.org.br';
 
+// Credenciais fixas de acesso temporário/visitante: autenticadas inteiramente
+// no cliente (sem chamar o backend), permitindo que quem não tem conta real
+// experimente o sistema. Nenhuma ação desse usuário é persistida no banco —
+// ver isDemoUser() e os desvios em js/api.js.
+export const DEMO_EMAIL = 'visitante@cfa.org.br';
+export const DEMO_SENHA = 'Visitante@2026';
+
 export const PERSPECTIVAS = {
     sustentabilidade: {
         nome: 'Sustentabilidade Social e Ambiental',
