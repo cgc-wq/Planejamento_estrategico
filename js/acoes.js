@@ -125,8 +125,43 @@ export function openModal(id = null) {
         });
 }
 
-export function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+export function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    limparFormularioModal();
+}
 export function closeModalOutside(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+
+function limparFormularioModal() {
+    state.editingId = null;
+    state.modalAnexo = null;
+    const m = (elId) => document.getElementById(elId);
+
+    m('m-tipo').value = 'projeto';
+    m('m-frequencia').value = 'mensal';
+    m('m-perspectiva').value = 'sustentabilidade';
+    window.updateObjetivos();
+    m('m-nome').value = '';
+    m('m-descricao').value = '';
+    m('m-responsavel').value = '';
+    m('m-prazo').value = '';
+    m('m-orcamento').value = '';
+    m('m-indicador-nome').value = '';
+    m('m-indicador-tipo').value = 'numerico';
+    m('m-meta-num').value = ''; m('m-res-num').value = '';
+    m('m-meta-data').value = ''; m('m-res-data').value = '';
+    m('m-meta-quali').value = ''; m('m-res-quali').value = 0; m('val-quali').innerText = '0%';
+
+    document.getElementById('modal-anexo-preview').style.display = 'none';
+    document.getElementById('modal-anexo-upload-area').style.display = 'flex';
+    document.getElementById('modal-anexo-status').textContent = 'Nenhum arquivo selecionado';
+    document.getElementById('modal-file-input').value = '';
+
+    ['m-nome', 'm-prazo', 'm-indicador-nome', 'm-meta-num', 'm-res-num', 'm-meta-data', 'm-res-data']
+        .forEach(elId => document.getElementById(elId)?.classList.remove('campo-invalido'));
+
+    toggleTipoCampos();
+    toggleIndicadorCampos();
+}
 
 export function removerAnexoModal() {
     state.modalAnexo = null;
