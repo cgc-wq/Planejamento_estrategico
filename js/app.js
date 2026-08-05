@@ -562,7 +562,18 @@ window.abrirModalCraAdmin = function () {
 window.fecharModalCraAdmin = function () {
     const overlay = document.getElementById('modal-cra-admin-overlay');
     if (overlay) overlay.classList.remove('open');
+    limparModalCraAdmin();
 };
+
+function limparModalCraAdmin() {
+    document.getElementById('cra-admin-nome').value = '';
+    document.getElementById('cra-admin-email').value = '';
+    document.getElementById('cra-admin-senha').value = '';
+    document.getElementById('cra-admin-entidade').value = '';
+    document.getElementById('cra-admin-senha-criterios')
+        ?.querySelectorAll('[data-check]')
+        .forEach(el => el.classList.remove('ok'));
+}
 
 window.salvarCraAdmin = async function () {
     const dados = {
@@ -586,10 +597,6 @@ window.salvarCraAdmin = async function () {
     const ok = await api.criarCraAdmin(dados);
     if (ok) {
         window.fecharModalCraAdmin();
-        document.getElementById('cra-admin-nome').value = '';
-        document.getElementById('cra-admin-email').value = '';
-        document.getElementById('cra-admin-senha').value = '';
-        document.getElementById('cra-admin-entidade').value = '';
     }
 };
 
